@@ -1,0 +1,9 @@
+-Iinclude
+-Wall
+-g3
+-xc++
+-std=c++17
+-Ix86_64-w64-mingw32/include/SDL2
+-Ix86_64-w64-mingw32/include
+-Wno-builtin-requires-header
+-IImgui

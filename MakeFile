@@ -1,0 +1,19 @@
+# Makefile
+CXX = g++
+CXXFLAGS = -Wall -g3
+OUTPUT_DIR = build
+TARGET = $(OUTPUT_DIR)/main.exe
+SOURCES = main.cpp tgaimage.cpp
+
+# 创建目录并编译
+$(TARGET): $(SOURCES)
+	mkdir -p $(OUTPUT_DIR)
+	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(TARGET)
+
+# 清理
+clean:
+	rm -f $(TARGET)
+
+# 运行
+run: $(TARGET)
+	./$(TARGET)

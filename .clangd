@@ -1,0 +1,14 @@
+CompileFlags:
+  Add: 
+    - "-Iinclude"
+    - "-Wall"
+    - "-g3"
+    - -std=c++17
+    - -Ix86_64-w64-mingw32/include/SDL2
+    - -Ix86_64-w64-mingw32/include
+    - -IImgui
+Diagnostics:
+  Suppress:
+    - builtin_definition
+  ClangTidy:
+    Remove: '*'
