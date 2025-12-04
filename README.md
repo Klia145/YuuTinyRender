@@ -13,7 +13,9 @@
 
 ## 🖼️ 渲染效果 (Gallery)
 
-[待补充：视锥体裁剪测试截图]
+[<img width="994" height="1023" alt="Image" src="https://github.com/user-attachments/assets/5d153829-4bca-4592-9da4-01d972d8721c" />]
+[<img width="990" height="991" alt="Image" src="https://github.com/user-attachments/assets/f19e26eb-6b76-4e38-b84d-47674157588d" />]
+[<img width="948" height="922" alt="Image" src="https://github.com/user-attachments/assets/6d229e28-6776-4bd6-8143-3fa87a44c5a1" />]
 
 ## ✨ 特性 (Features)
 
