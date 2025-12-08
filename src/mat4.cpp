@@ -1,5 +1,6 @@
 #include"mat4.h"
 #include<cmath>
+#include"utils.h"
 mat4::mat4():mat4(1.0f){};
 mat4::mat4(float diagonal){
     for(int i=0;i<4;i++){
@@ -116,4 +117,26 @@ mat4 mat4::perspective(float fov,float aspect,float near,float far){
 
     result.m[3][2]=-1.0f;
     return result;
+}
+mat4 mat4::lookAt(const vec3&eye,const vec3&target,const vec3&up){
+    vec3 forward=normalize(target-eye);
+    vec3 right=normalize(forward.cross(up));
+    vec3 camera_up=right.cross(forward);
+
+    mat4 rotation(1);
+    rotation.m[0][0]=right.x;
+    rotation.m[0][1]=right.y;
+    rotation.m[0][2]=right.z;
+
+    rotation.m[1][0] = camera_up.x;
+    rotation.m[1][1] = camera_up.y;
+    rotation.m[1][2] = camera_up.z;
+
+    rotation.m[2][0] = -forward.x;  // 注意：右手坐标系Z朝外，所以取反
+    rotation.m[2][1] = -forward.y;
+    rotation.m[2][2] = -forward.z;
+
+    mat4 translation = mat4::translate(-eye.x, -eye.y, -eye.z);
+    
+    return rotation * translation;
 }

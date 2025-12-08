@@ -1,18 +1,29 @@
-
+# Build directories
 build/
+build_cmake/
+cmake-build-*/
 
-
-obj/
+# Compiled Object files (但不忽略obj目录本身)
 *.obj
 *.o
 *.pdb
 
-output_exe/
+# Executables
 *.exe
+output_exe/
 
+# IDE
 .clangd/
 .vscode/
 
+# OS
 .DS_Store
 Thumbs.db
 
+# Output images (但保留模型贴图)
+*.png
+*.log
+
+# 允许obj目录下的贴图文件
+!obj/**/*.tga
+!obj/**/*.png

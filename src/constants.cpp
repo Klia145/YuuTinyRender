@@ -1,5 +1,6 @@
 #include "constants.h"
-
+#ifndef USE_MODERN_CONFIG
+#include<string>
 const int width = 800;
 const int height = 800;
 const float MouseSensitivity = 0.1f;
@@ -23,3 +24,6 @@ const float Fov=45.0f/180.0f*3.1415926535f;
 const float Near=0.1f;
 const float aspect=width/height;
 const float Far=100.0f;
+const float CameraDistance=3.0f;
+const float PI=3.1415926;
+#endif

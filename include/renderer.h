@@ -20,3 +20,4 @@ void Render(TGAImage& image, const Model& model, std::vector<float>& zBuffer, TG
 void render_with_msaa(const MSAA& msaa, const std::string& filename);
 void testMSAAPatterns();
 void render_rotation_sequence();
+void render_skyBox(TGAImage&image);

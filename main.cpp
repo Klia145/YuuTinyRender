@@ -4,7 +4,7 @@
 #include"constants.h"
 #include"colorTable.h"
 #include"geometry.h"
-
+#include"camera.h"
 void copy_image_to_surface(TGAImage&image,SDL_Surface* surface,int w,int h){
     SDL_LockSurface(surface);
 
@@ -67,11 +67,8 @@ int main(int argc,char* argv[]){
     
     // 渲染参数
     vec3 light_dir=normalize(vec3(1,1,1));
-    float angle_y=0.0f;
-    float angle_x=0.0f;
-    float distance=3.0f;
-    float pan_x=0.0f;
-    float pan_y=0.0f;
+    
+    Camera camera(vec3(0,0,3),vec3(0,0,0),Fov,aspect,Near,Far);
     bool mouse_left_down=false;
     bool mouse_right_down=false;
     int last_mouse_x=0;
@@ -86,6 +83,44 @@ int main(int argc,char* argv[]){
         while(SDL_PollEvent(&event)){
             if(event.type==SDL_QUIT){
                 running=false;
+            }
+            if(event.type==SDL_KEYDOWN){
+                vec3 model_center=model.getCenter();
+                bool ctrl_pressed=(SDL_GetModState()&KMOD_CTRL);
+                if(event.key.keysym.sym==SDLK_KP_PERIOD){
+                    
+                    camera.focusOn(model_center,CameraDistance);
+                    std::cout<<"聚焦模型中"<<std::endl;
+                }
+                if(event.key.keysym.sym == SDLK_f){
+                   camera.focusPreset(ViewPreset::DEFAULT, model_center, 3.0f);
+                }
+                if(event.key.keysym.sym==SDLK_KP_1){
+                    if(ctrl_pressed){
+                    camera.focusPreset(ViewPreset::BACK, model_center, 3.0f);
+                    }
+                    else{
+                    camera.focusPreset(ViewPreset::FRONT, model_center, 3.0f);
+                    }
+                }
+                if(event.key.keysym.sym == SDLK_KP_3){
+                    if(ctrl_pressed){
+                    camera.focusPreset(ViewPreset::LEFT, model_center, 3.0f);
+                    } else {
+                    camera.focusPreset(ViewPreset::RIGHT, model_center, 3.0f);
+                    }
+                }
+                if(event.key.keysym.sym==SDLK_KP_7){
+                    if(ctrl_pressed){
+                        camera.focusPreset(ViewPreset::BOTTOM,model_center,3.0f);
+                    }
+                    else{
+                        camera.focusPreset(ViewPreset::TOP,model_center,3.0f);
+                    }
+                }
+                if(event.key.keysym.sym==SDLK_ESCAPE){
+                    running=false;
+                }
             }
             if(event.type==SDL_BUTTON_LEFT){
                 mouse_left_down=true;
@@ -110,9 +145,11 @@ int main(int argc,char* argv[]){
             if(event.type==SDL_MOUSEBUTTONUP){
                 if(event.button.button==SDL_BUTTON_LEFT){
                     mouse_left_down=false;
+                    std::cout << "左键松开！" << std::endl;
                 }
                 if(event.button.button==SDL_BUTTON_RIGHT){
                     mouse_right_down=false;
+                    std::cout << "右键松开！" << std::endl;
                 }
             }
             if(event.type==SDL_MOUSEMOTION){
@@ -122,45 +159,26 @@ int main(int argc,char* argv[]){
                 int delta_y = current_y - last_mouse_y;
                 
                 if (mouse_left_down) {
-                    angle_y += delta_x * MouseSensitivity;  // 灵敏度：0.01
-                    
-                    angle_x += delta_y * MouseSensitivity;
-                    
-
-                    if (angle_x > 1.5f) angle_x = 1.5f;
-                    if (angle_x < -1.5f) angle_x = -1.5f;
-                    
-                    std::cout << "Rotation - Y: " << (angle_y * 180.0f / 3.14159f) 
-                              << "°, X: " << (angle_x * 180.0f / 3.14159f) << "°" << std::endl;
+                    camera.rotate(delta_x*Config::MouseSensitivity,delta_y*MouseSensitivity);
                 }
                 if(mouse_right_down){
-                pan_x+=delta_x*PAN_SENSITIVITY;
-                pan_y-=delta_y*PAN_SENSITIVITY;
-                std::cout<<"Pan - X: "<<pan_x<<", Y: "<<pan_y<<std::endl;
+                    camera.pan(delta_x*Config::MouseSensitivity,delta_y*Config::MouseSensitivity);
                 }
                 last_mouse_x=current_x;//这部分就是生命周期
                 last_mouse_y=current_y;
             }
             if(event.type==SDL_MOUSEWHEEL)
             {
-                if(event.wheel.y>0){
-                    distance-=0.5f;
-                    if(distance<0.5f)distance=0.5f;
-                }
-                else if(event.wheel.y<0){
-                    distance+=0.5f;
-                    if(distance>30.0f)distance=30.0f;
-                }
-                std::cout<<"Zoom: "<<distance<<std::endl;
+                float zoom_delta=event.wheel.y*Config::ZOOM_SENSITIVITY;
+                camera.zoom(zoom_delta);
+                std::cout<<"Zoom:"<<camera.getDistance()<<std::endl;
             }
         }
         TGAImage framebuffer(width,height,3,ColorTable::getColor(ColorName::BLACK));
+        render_skyBox(framebuffer);
         std::vector<float>zbuffer(width*height,-1e9);
 
-        mat4 model_mat=mat4::rotate_y(angle_y)*mat4::rotate_x(angle_x);
-        mat4 view=mat4::translate(pan_x,pan_y,-distance);
-        mat4 proj=mat4::perspective(Fov,aspect,Near,Far);
-        mat4 mvp=proj*view*model_mat;
+        mat4 mvp=camera.getViewProjectionMatrix();
 
         Render(framebuffer,model,zbuffer,texture,light_dir,mvp);
         copy_image_to_surface(framebuffer,screen,width,height);
@@ -176,7 +194,12 @@ int main(int argc,char* argv[]){
         
         SDL_Delay(16);
     }
+
+
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
+
+
+
 }

@@ -425,7 +425,18 @@ void render_rotation_sequence() {
         float angle = frame * 10 * 3.14159f / 180.0f;
         mat4 mvp = TransformModel_To_View(angle);
         
-        TGAImage image(width, height, 3, ColorTable::getColor(ColorName::BLACK));
+        TGAImage image(width, height, 3, TGAColor(0,0,0,255));
+        for(int y=0;y<height;y++){
+            float t=(float)y/height;
+            int r=135+(200-135)*t;
+            int g=206+(220-206)*t;
+            int b=235+(220-235)*t;
+
+            TGAColor sky_color(r,g,b,255);
+            for(int x=0;x<width;x++){
+                image.set(x,y,sky_color);
+            }
+        }
         std::vector<float> zbuffer(width * height, -1e9);
 
         Render(image, model, zbuffer, texture, light_dir, mvp);
@@ -436,5 +447,18 @@ void render_rotation_sequence() {
         image.write_png_file(output_path + output_png_group + std::string(filename));
         
         std::cout << "Rendered frame " << frame << std::endl;
+    }
+}
+void render_skyBox(TGAImage &image){
+    for(int y=0;y<height;y++){
+            float t=(float)y/height;
+            int r=135+(200-135)*t;
+            int g=206+(220-206)*t;
+            int b=235+(220-235)*t;
+
+            TGAColor sky_color(r,g,b,255);
+            for(int x=0;x<width;x++){
+                image.set(x,y,sky_color);
+            }
     }
 }

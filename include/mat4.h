@@ -17,7 +17,9 @@ class mat4{
     static mat4 rotate_y(float angle);
     static mat4 rotate_z(float angle);
     static mat4 perspective(float fov,float aspect,float near,float far);
+    static mat4 lookAt(const vec3&eye,const vec3&target,const vec3&up);
     mat4& Applytranslate(float x,float y, float z);
     mat4& Applyscale(float x,float y,float z);
+
 
 };

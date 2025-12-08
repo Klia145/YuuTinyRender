@@ -20,6 +20,7 @@ $sources = @(
     "src/colorTable.cpp",
     "src/vec2.cpp",
     "src/mat4.cpp",
+    "src/camera.cpp",
     # ← 新增：ImGui源文件
     "imgui/imgui.cpp",
     "imgui/imgui_draw.cpp",
@@ -27,6 +28,7 @@ $sources = @(
     "imgui/imgui_widgets.cpp",
     "imgui/backends/imgui_impl_sdl2.cpp",
     "imgui/backends/imgui_impl_sdlrenderer2.cpp"
+
 )
 
 g++ -Wall -g3 -std=c++17 `

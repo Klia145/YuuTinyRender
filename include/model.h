@@ -25,4 +25,6 @@ class Model{
     std::vector<int>face(int i) const;
     vec3 vert(int iface,int nthvert) const;
     vec3 normal(int iface,int nthvert)const;
+
+    vec3 getCenter()const;
 };

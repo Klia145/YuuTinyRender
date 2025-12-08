@@ -79,6 +79,30 @@ Model::Model(const std::string&filename){
 
 }
 
+vec3 Model::getCenter()const{
+    if(vertices_.empty()){
+        return vec3(0,0,0);
+    }
+
+    vec3 min_point=vertices_[0];
+    vec3 max_point=vertices_[0];
+    for(const auto&v:vertices_){
+        if(v.x<min_point.x)min_point.x=v.x;
+        if(v.y<min_point.y)min_point.y=v.y;
+        if(v.z<min_point.z)min_point.z=v.z;
+
+        if(v.x>max_point.x)max_point.x=v.x;
+        if(v.y>max_point.y)max_point.y=v.y;
+        if(v.z>max_point.z)max_point.z=v.z;
+    }
+
+    vec3 center;
+    center.x=(min_point.x+max_point.x)*0.5;
+    center.y=(min_point.y+max_point.y)*0.5;
+    center.z=(min_point.z+max_point.z)*0.5;
+    return center;
+}
+
     /*    
     std::ifstream file(filename);
     if(!file.is_open()){
