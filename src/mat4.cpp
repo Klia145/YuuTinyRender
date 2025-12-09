@@ -140,3 +140,57 @@ mat4 mat4::lookAt(const vec3&eye,const vec3&target,const vec3&up){
     
     return rotation * translation;
 }
+mat4 mat4::orthographic(float left,float right,float bottom,float top,float near,float far){
+    mat4 result(0);
+    result.m[0][0]=2.0f/(right-left);
+    result.m[1][1]=2.0f/(top-bottom);
+    result.m[2][2]=-2.0f/(far-near);
+
+    result.m[0][3]=-(right+left)/(right-left);
+    result.m[1][3]=-(top+bottom)/(top-bottom);
+    result.m[2][3]=-(far+near)/(far-near);
+
+    result.m[3][3]=1.0f;
+    return result;
+}
+mat4 mat4::inverse()const{
+    mat4 result(0);
+
+    float augmented[4][8];
+    for(int i=0;i<4;i++){
+        int pivot=i;
+        for(int j=0;j<4;j++){
+            if(std::abs(augmented[j][i])>std::abs(augmented[pivot][i])){
+                pivot=j;
+            }
+        }
+        if(pivot!=i){
+            for(int j=0;j<8;j++){
+                std::swap(augmented[i][j],augmented[pivot][j]);
+            }
+        }
+        if(std::abs(augmented[i][i])<0.00001f){
+            return mat4();
+        }
+
+        float pivotValue=augmented[i][i];
+        for(int j=0;j<8;j++){
+            augmented[i][j]/=pivotValue;
+        }
+        for(int j=0;j<4;j++){
+            if(j!=i){
+                float factor=augmented[j][i];
+                for(int k=0;k<8;k++){
+                    augmented[j][k]-=factor*augmented[i][k];
+                }
+            }
+        }
+    }
+    for(int i=0;i<4;i++){
+        for(int j=0;j<4;j++){
+            result.m[i][j]=augmented[i][j+4];
+        }
+    }
+    return result;
+    
+}

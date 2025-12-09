@@ -3,6 +3,8 @@
 #include "utils.h"
 #include"constants.h"
 #include<colorTable.h>
+#include <omp.h>
+
 void Line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
     for(float t = 0; t < 1; t += 0.01) {
         int x = x0 + (x1 - x0) * t;
@@ -460,5 +462,343 @@ void render_skyBox(TGAImage &image){
             for(int x=0;x<width;x++){
                 image.set(x,y,sky_color);
             }
+    }
+}
+void DrawGrid(TGAImage&image,const mat4&mvp,const vec3&camera_pos,const TGAColor&color){
+
+    int width=image.width();
+    int height=image.height();
+
+    float camera_height = std::abs(camera_pos.y);
+    if (camera_height < 0.1f) camera_height = 1.0f;  
+    
+    float cell_size = 1.0f;
+    if (camera_height > 10.0f) cell_size = 2.0f;
+    if (camera_height > 20.0f) cell_size = 5.0f;
+    if (camera_height > 50.0f) cell_size = 10.0f;
+    
+    int grid_count = std::min(20, (int)(camera_height * 2.0f / cell_size));
+    if (grid_count < 5) grid_count = 5;  
+    
+    float half_size = grid_count * cell_size / 2.0f;
+    float step = cell_size;  
+
+
+
+    for(int i=0;i<=grid_count;i++){
+        float z=-half_size+i*step;
+        vec3 p1(-half_size,0.0f,z);
+        vec3 p2(half_size,0.0f,z);
+
+        vec4 v1=mvp*vec4(p1.x,p1.y,p1.z,1.0f);
+        vec4 v2=mvp*vec4(p2.x,p2.y,p2.z,1.0f);
+         if (v1.w > 0.0001f && v2.w > 0.0001f) {
+            v1.x /= v1.w; v1.y /= v1.w;
+            v2.x /= v2.w; v2.y /= v2.w;
+            
+            // NDC -> 屏幕坐标
+            int x1 = (int)((v1.x + 1.0f) * 0.5f * width);
+            int y1 = (int)((1.0f - v1.y) * 0.5f * height);
+            int x2 = (int)((v2.x + 1.0f) * 0.5f * width);
+            int y2 = (int)((1.0f - v2.y) * 0.5f * height);
+            
+            // 绘制线段
+            BresenhamLine(x1, y1, x2, y2, image, color);
+        }
+
+    }
+    for(int i=0;i<=grid_count;i++){
+        float x=-half_size+i*step;
+        vec3 p1(x,0.0f,-half_size);
+        vec3 p2(x,0.0f,half_size);
+
+        vec4 v1=mvp*vec4(p1.x,p1.y,p1.z,1.0f);
+        vec4 v2=mvp*vec4(p2.x,p2.y,p2.z,1.0f);
+        if (v1.w > 0.0001f && v2.w > 0.0001f) {
+            v1.x /= v1.w; v1.y /= v1.w; 
+            v2.x /= v2.w; v2.y /= v2.w;
+            
+            int x1 = (int)((v1.x + 1.0f) * 0.5f * width);
+            int y1 = (int)((1.0f - v1.y) * 0.5f * height);
+            int x2 = (int)((v2.x + 1.0f) * 0.5f * width);
+            int y2 = (int)((1.0f - v2.y) * 0.5f * height);
+            
+            BresenhamLine(x1, y1, x2, y2, image, color); 
+        }
+    }
+}
+void DrawScreenSpaceGrid(TGAImage&image,const mat4&mvp,const Camera&camera,const TGAColor&color){
+    int width=image.width();
+    int height=image.height();
+
+    int grid_spacing=50;
+    vec3 camera_pos=camera.getPosition();
+
+    for(int screen_x=0;screen_x<width;screen_x+=grid_spacing){
+        vec3 ray_top=camera.screenToWorldRay(screen_x,0,width,height);
+        vec3 ray_bottom=camera.screenToWorldRay(screen_x,height,width,height);
+
+        vec3 p1 = camera.rayGroundIntersection(camera_pos, ray_top);
+        vec3 p2 = camera.rayGroundIntersection(camera_pos, ray_bottom);
+        if(p1.length()<1000.0f&&p2.length()<1000.0f){
+            vec4 v1 = mvp * vec4(p1.x, p1.y, p1.z, 1.0f);
+            vec4 v2 = mvp * vec4(p2.x, p2.y, p2.z, 1.0f);
+            if (v1.w > 0.0001f && v2.w > 0.0001f) {
+                v1.x /= v1.w; v1.y /= v1.w;
+                v2.x /= v2.w; v2.y /= v2.w;
+                
+                int x1 = (int)((v1.x + 1.0f) * 0.5f * width);
+                int y1 = (int)((1.0f - v1.y) * 0.5f * height);
+                int x2 = (int)((v2.x + 1.0f) * 0.5f * width);
+                int y2 = (int)((1.0f - v2.y) * 0.5f * height);
+                
+                BresenhamLine(x1, y1, x2, y2, image, color);
+            }
+        }
+        
+    }
+    for (int screen_y = 0; screen_y < height; screen_y += grid_spacing) {
+        vec3 ray_left = camera.screenToWorldRay(0, screen_y, width, height);
+        vec3 ray_right = camera.screenToWorldRay(width, screen_y, width, height);
+        
+        vec3 p1 = camera.rayGroundIntersection(camera_pos, ray_left);
+        vec3 p2 = camera.rayGroundIntersection(camera_pos, ray_right);
+        
+        if (p1.length() < 1000.0f && p2.length() < 1000.0f) {
+            vec4 v1 = mvp * vec4(p1.x, p1.y, p1.z, 1.0f);
+            vec4 v2 = mvp * vec4(p2.x, p2.y, p2.z, 1.0f);
+            
+            if (v1.w > 0.0001f && v2.w > 0.0001f) {
+                v1.x /= v1.w; v1.y /= v1.w;
+                v2.x /= v2.w; v2.y /= v2.w;
+                
+                int x1 = (int)((v1.x + 1.0f) * 0.5f * width);
+                int y1 = (int)((1.0f - v1.y) * 0.5f * height);
+                int x2 = (int)((v2.x + 1.0f) * 0.5f * width);
+                int y2 = (int)((1.0f - v2.y) * 0.5f * height);
+                
+                BresenhamLine(x1, y1, x2, y2, image, color);
+            }
+        }
+    }
+
+}
+void applyGammaCorrection(TGAImage& image, float gamma) {
+    static unsigned char gamma_table[256];
+    static bool table_initialized = false;
+
+    if (!table_initialized) {
+        const float inv_gamma = 1.0f / gamma;
+        for (int i = 0; i < 256; i++) {
+            float normalized = i / 255.0f;
+            float corrected = std::pow(normalized, inv_gamma);
+            gamma_table[i] = (unsigned char)(corrected * 255.0f);
+        }
+        table_initialized = true;
+    }
+
+    int width = image.width();
+    int height = image.height();
+    
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            TGAColor color = image.get(x, y);
+            
+            color.bgra[2] = gamma_table[color.bgra[2]];  // R
+            color.bgra[1] = gamma_table[color.bgra[1]];  // G
+            color.bgra[0] = gamma_table[color.bgra[0]];  // B
+            
+            image.set(x, y, color);
+        }
+    }
+}
+vec3 barycentric(vec2 A, vec2 B, vec2 C, vec2 P) {
+    vec3 s[2];
+    s[0] = vec3(C.u - A.u, B.u - A.u, A.u - P.u);
+    s[1] = vec3(C.v - A.v, B.v - A.v, A.v - P.v);
+
+    vec3 u = s[0].cross(s[1]);
+    if (std::abs(u.z) < 1e-2) return vec3(-1, 1, 1);
+
+ 
+
+    return vec3(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
+}
+void DrawLine3D(TGAImage& image, const mat4& vp, vec3 p1, vec3 p2, int w, int h, TGAColor color) {
+    vec4 v1 = vp * vec4(p1.x, p1.y, p1.z, 1.0f);
+    vec4 v2 = vp * vec4(p2.x, p2.y, p2.z, 1.0f);
+
+    if (v1.w < 0.1f && v2.w < 0.1f) return;
+    if (v1.w < 0.1f) { float t = (0.1f - v1.w)/(v2.w - v1.w); v1 = v1 + (v2 - v1)*t; }
+    if (v2.w < 0.1f) { float t = (0.1f - v2.w)/(v1.w - v2.w); v2 = v2 + (v1 - v2)*t; }
+
+    v1.x /= v1.w; v1.y /= v1.w;
+    v2.x /= v2.w; v2.y /= v2.w;
+
+
+    int x1 = (int)((v1.x + 1.0f) * 0.5f * w);
+    int y1 = (int)((1.0f - v1.y) * 0.5f * h);
+    int x2 = (int)((v2.x + 1.0f) * 0.5f * w);
+    int y2 = (int)((1.0f - v2.y) * 0.5f * h);
+
+    if ((x1 < 0 && x2 < 0) || (x1 >= w && x2 >= w) || 
+    (y1 < 0 && y2 < 0) || (y1 >= h && y2 >= h)) {
+    return; 
+    }          
+
+
+    BresenhamLine( x1, y1, x2, y2, image,color);
+}
+void DrawInfiniteGrid(TGAImage& image, const mat4& view, const mat4& proj, const vec3& camera_pos) {
+    int width = image.width();
+    int height = image.height();
+    
+    float grid_spacing = 2.0f;  
+    int grid_radius = 20;      
+    TGAColor color_grid(120, 120, 120, 255); 
+    TGAColor color_x_axis(255, 50, 50, 255); 
+    TGAColor color_z_axis(50, 50, 255, 255); 
+    
+    mat4 vp = proj * view; 
+
+
+    float snap_x = std::floor(camera_pos.x / grid_spacing) * grid_spacing;
+    float snap_z = std::floor(camera_pos.z / grid_spacing) * grid_spacing;
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = -grid_radius; i <= grid_radius; i++) {
+        // 当前线的世界坐标 X
+        float x = snap_x + i * grid_spacing;
+        
+
+        vec3 p1(x, 0.0f, snap_z - grid_radius * grid_spacing);
+        vec3 p2(x, 0.0f, snap_z + grid_radius * grid_spacing);
+
+
+        TGAColor current_color = (std::abs(x) < 0.001f) ? color_z_axis : color_grid;
+
+        DrawLine3D(image, vp, p1, p2, width, height, current_color);
+    }
+    for (int i = -grid_radius; i <= grid_radius; i++) {
+        float z = snap_z + i * grid_spacing;
+        
+        vec3 p1(snap_x - grid_radius * grid_spacing, 0.0f, z);
+        vec3 p2(snap_x + grid_radius * grid_spacing, 0.0f, z);
+
+        TGAColor current_color = (std::abs(z) < 0.001f) ? color_x_axis : color_grid;
+
+        DrawLine3D(image, vp, p1, p2, width, height, current_color);
+    }
+}
+
+void triangle_with_texture(
+    float x0, float y0, float z0, const vec2& uv0, const vec3& world0,  
+    float x1, float y1, float z1, const vec2& uv1, const vec3& world1,
+    float x2, float y2, float z2, const vec2& uv2, const vec3& world2,
+    TGAImage& image, std::vector<float>& zBuffer, TGAImage& texture, 
+    float intensity,
+    const vec3& camera_pos, bool enable_fog, 
+    const vec3& fog_color, float fog_start, float fog_end) {
+    
+    int width = image.width();
+    int height = image.height();
+    
+    int min_x = std::max(0, (int)std::min(x0, std::min(x1, x2)));
+    int min_y = std::max(0, (int)std::min(y0,std::min(y1,y2)));
+    int max_x = std::min(width - 1, (int)std::max(x0,std::max(x1,x2)));
+    int max_y = std::min(height - 1, (int)std::max(y0,std::max(y1,y2)));
+    
+
+    for (int x = min_x; x <= max_x; x++) {
+        for (int y = min_y; y <= max_y; y++) {
+            vec3 bc = barycentric(vec2(x0, y0), vec2(x1, y1), vec2(x2, y2), 
+                                 vec2(x + 0.5f, y + 0.5f));
+            
+            if (bc.x < 0 || bc.y < 0 || bc.z < 0) continue;
+            
+            // 深度插值
+            float z = z0 * bc.x + z1 * bc.y + z2 * bc.z;
+            int idx = x + y * width;
+            
+            if (zBuffer[idx] < z) {
+                zBuffer[idx] = z;
+                
+                // ✅ 世界坐标插值（用于计算距离）
+                vec3 world_pos = world0 * bc.x + world1 * bc.y + world2 * bc.z;
+                
+                // UV插值
+                vec2 uv = uv0 * bc.x + uv1 * bc.y + uv2 * bc.z;
+                
+                // 采样纹理
+                int tex_x = (int)(uv.u * texture.width());
+                int tex_y = (int)(uv.v * texture.height());
+                TGAColor tex_color = texture.get(tex_x, tex_y);
+                
+                // 应用光照
+                vec3 color(
+                    tex_color.bgra[2] / 255.0f * intensity,
+                    tex_color.bgra[1] / 255.0f * intensity,
+                    tex_color.bgra[0] / 255.0f * intensity
+                );
+                
+                // ✅ 应用雾效
+                if (enable_fog) {
+                    float distance = (world_pos - camera_pos).length();
+                    float fog_factor = (distance - fog_start) / (fog_end - fog_start);
+                    fog_factor = std::max(0.0f, std::min(1.0f, fog_factor));
+                    
+                    color.x = color.x * (1.0f - fog_factor) + fog_color.x * fog_factor;
+                    color.y = color.y * (1.0f - fog_factor) + fog_color.y * fog_factor;
+                    color.z = color.z * (1.0f - fog_factor) + fog_color.z * fog_factor;
+                }
+                
+                // 转回颜色
+                TGAColor final_color(
+                    (unsigned char)(color.z * 255),
+                    (unsigned char)(color.y * 255),
+                    (unsigned char)(color.x * 255),
+                    255
+                );
+                
+                image.set(x, y, final_color);
+            }
+        }
+    }
+}
+void Render(TGAImage& image, const Model& model, std::vector<float>& zBuffer, 
+            TGAImage& texture, const vec3& light_dir, const mat4& mvp,
+            const vec3& camera_pos, bool enable_fog) {
+
+    const float fog_start = Config::Fog::FogStart;
+    const float fog_end = Config::Fog::FogEnd;
+    const vec3 fog_color(
+        Config::Fog::FogColorR / 255.0f,
+        Config::Fog::FogColorG / 255.0f,
+        Config::Fog::FogColorB / 255.0f
+    );
+    for(int i = 0; i < model.nfaces(); i++) {
+        vec3 v0 = model.vert(i, 0);
+        vec3 v1 = model.vert(i, 1);
+        vec3 v2 = model.vert(i, 2);
+
+        vec4 v0_clip = mvp * vec4(v0, 1);
+        vec4 v1_clip = mvp * vec4(v1, 1);
+        vec4 v2_clip = mvp * vec4(v2, 1);
+        vec2 uv0 = model.uv(i, 0);
+        vec2 uv1 = model.uv(i, 1);
+        vec2 uv2 = model.uv(i, 2);
+        vec3 normal = normalize((v2 - v0).cross(v1 - v0));
+        float intensity = std::max(0.f, normal.dot(light_dir)); 
+        float ambient = 0.2f;
+        intensity = intensity * 0.8f + ambient;
+        auto [x0, y0, z0] = project(v0_clip);
+        auto [x1, y1, z1] = project(v1_clip);
+        auto [x2, y2, z2] = project(v2_clip);
+        triangle_with_texture(
+            x0, y0, z0, uv0, v0,  
+            x1, y1, z1, uv1, v1,
+            x2, y2, z2, uv2, v2,
+            image, zBuffer, texture, intensity,
+            camera_pos, enable_fog, fog_color, fog_start, fog_end 
+        );
     }
 }

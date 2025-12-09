@@ -60,8 +60,21 @@ int main(int argc,char* argv[]){
     std::cout << "SDL Viewer Started!" << std::endl;
     std::cout << "==================================" << std::endl;
     std::cout << "Controls:" << std::endl;
-    std::cout << "  Left/Right Arrow: Rotate model" << std::endl;
-    std::cout << "  Up/Down Arrow: Zoom in/out" << std::endl;
+    std::cout << "  Left Mouse: Rotate" << std::endl;
+    std::cout << "  Right Mouse: Pan" << std::endl;
+    std::cout << "  Mouse Wheel: Zoom" << std::endl;
+    std::cout << "  ---" << std::endl;
+    std::cout << "  P: Toggle Projection (Perspective/Orthographic)" << std::endl;  
+    std::cout << "  F: Default view" << std::endl;
+    std::cout << "  G: Toggle Grid" << std::endl; 
+    std::cout<< "ctrl+f: Open Fog"<<std::endl;
+    std::cout <<  " Q:Gama Correction"<<std::endl;
+    std::cout << "  Numpad .: Focus" << std::endl;
+    std::cout << "  Numpad 1: Front (Ctrl+1: Back)" << std::endl;
+    std::cout << "  Numpad 3: Right (Ctrl+3: Left)" << std::endl;
+    std::cout << "  Numpad 7: Top (Ctrl+7: Bottom)" << std::endl;
+
+    std::cout << "  ---" << std::endl;
     std::cout << "  ESC: Exit" << std::endl;
     std::cout << "==================================" << std::endl;
     
@@ -75,6 +88,11 @@ int main(int argc,char* argv[]){
     int last_mouse_y=0;
 
     bool running=true;
+    bool show_grid=true;
+    bool simple_grid=false;
+    bool GammaCorrection=true;
+    bool enable_fog=false;
+
     Uint32 Last_time=SDL_GetTicks();
     int frame_count=0;
 
@@ -91,6 +109,12 @@ int main(int argc,char* argv[]){
                     
                     camera.focusOn(model_center,CameraDistance);
                     std::cout<<"聚焦模型中"<<std::endl;
+                }
+                if(event.key.keysym.sym==SDLK_p){
+                    camera.toggleProjectionMode();
+                }
+                if(event.key.keysym.sym==SDLK_u){
+                    enable_fog=!enable_fog;
                 }
                 if(event.key.keysym.sym == SDLK_f){
                    camera.focusPreset(ViewPreset::DEFAULT, model_center, 3.0f);
@@ -118,9 +142,28 @@ int main(int argc,char* argv[]){
                         camera.focusPreset(ViewPreset::TOP,model_center,3.0f);
                     }
                 }
+
+                if(event.key.keysym.sym==SDLK_g){
+                    if(ctrl_pressed){
+                        simple_grid=!simple_grid;
+                    }
+                    else{
+                        show_grid=!show_grid;
+                    }
+                }
+                if(event.key.keysym.sym==SDLK_q){
+                    GammaCorrection=!GammaCorrection;
+                    if(GammaCorrection){
+                        std::cout<<"开启伽马校正"<<std::endl;
+                    }
+                    else{
+                        std::cout<<"关闭伽马校正"<<std::endl;
+                    }
+                }
                 if(event.key.keysym.sym==SDLK_ESCAPE){
                     running=false;
                 }
+
             }
             if(event.type==SDL_BUTTON_LEFT){
                 mouse_left_down=true;
@@ -177,11 +220,31 @@ int main(int argc,char* argv[]){
         TGAImage framebuffer(width,height,3,ColorTable::getColor(ColorName::BLACK));
         render_skyBox(framebuffer);
         std::vector<float>zbuffer(width*height,-1e9);
+        mat4 view=camera.getViewMatrix();
+        mat4 projection=camera.getProjectionMatrix();
 
         mat4 mvp=camera.getViewProjectionMatrix();
 
-        Render(framebuffer,model,zbuffer,texture,light_dir,mvp);
+        if(show_grid){
+            if(simple_grid){
+                DrawGrid(framebuffer,mvp,camera.getPosition(),TGAColor(100,100,100,255));
+
+            }
+            else{
+                DrawInfiniteGrid(framebuffer,view,projection,camera.getPosition());
+                /*
+                DrawScreenSpaceGrid(framebuffer,mvp,camera,TGAColor(100,100,100,255));
+                */
+            }
+        }
+
+
+
+        Render(framebuffer,model,zbuffer,texture,light_dir,mvp,camera.getPosition(),enable_fog);
         copy_image_to_surface(framebuffer,screen,width,height);
+        if(GammaCorrection){
+            applyGammaCorrection(framebuffer);
+        }
 
         SDL_UpdateWindowSurface(window);
         frame_count++;
@@ -191,8 +254,7 @@ int main(int argc,char* argv[]){
             frame_count = 0;
             Last_time = current_time;
         }
-        
-        SDL_Delay(16);
+    
     }
 
 

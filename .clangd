@@ -1,14 +1,31 @@
 CompileFlags:
-  Add: 
-    - "-Iinclude"
-    - "-Wall"
-    - "-g3"
-    - -std=c++17
+  CompilationDatabase: build_cmake
+  Add:
+    - -Iinclude
     - -Ix86_64-w64-mingw32/include/SDL2
     - -Ix86_64-w64-mingw32/include
     - -IImgui
+    - -Iimgui
+    - -Iimgui/backends
+    - -std=c++17
+    - -Wall
+    - -Wno-builtin-requires-header
+    - -Wno-ignored-attributes
+    - -Wno-unknown-warning-option
+
+Index:
+  Background: Build
+If:
+  PathExclude: 
+    - imgui/examples/.*
+    - Imgui/examples/.*
+
 Diagnostics:
+  UnusedIncludes: None
   Suppress:
     - builtin_definition
-  ClangTidy:
-    Remove: '*'
+    - drv_unknown_argument
+    - pp_including_mainfile_in_preamble
+
+Hover:
+  ShowAKA: Yes

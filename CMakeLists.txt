@@ -45,17 +45,41 @@ list(FILTER SOURCES EXCLUDE REGEX ".*constants\\.cpp$")
 add_executable(viewer ${SOURCES})
 
 # 链接SDL2
-target_link_libraries(viewer
+target_link_libraries(viewer PRIVATE
     mingw32
     SDL2main
     SDL2
 )
+find_package(OpenMP REQUIRED)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(viewer PRIVATE OpenMP::OpenMP_CXX)
+    message(STATUS "OpenMP Found! Multi-threading enabled.")
+else()
+    message(WARNING "OpenMP not found. Running in single thread mode.")
+endif()
 
-# 编译选项
-target_compile_options(viewer PRIVATE
-    -Wall
-    -g3
-)
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
+    message(STATUS "⚠️  Build Type was empty, FORCING to Release mode!")
+endif()
+
+# 再次确认并打印
+message(STATUS ">>>>> Current Build Type: ${CMAKE_BUILD_TYPE} <<<<<")
+
+
+if(MSVC)
+    target_compile_options(viewer PRIVATE /W4 /O2)
+else()
+    target_compile_options(viewer PRIVATE -Wall)
+
+    if(CMAKE_BUILD_TYPE MATCHES "Debug")
+        target_compile_options(viewer PRIVATE -g -O0)
+    else()
+        target_compile_options(viewer PRIVATE -O3 -ffast-math)
+    endif()
+endif()
+
 
 # 输出信息
 list(LENGTH SOURCES SOURCE_COUNT)

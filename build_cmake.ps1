@@ -14,13 +14,12 @@ if (!(Test-Path "build_cmake")) {
     New-Item -ItemType Directory -Path "build_cmake" | Out-Null
 }
 
-# 进入build目录
+
 Set-Location build_cmake
 
-# 配置CMake（如果需要）
 if (!(Test-Path "build.ninja")) {
     Write-Host "🔧 Configuring CMake..." -ForegroundColor Yellow
-    cmake -G "Ninja" ..
+    cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
     
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[ERROR] CMake configuration failed!" -ForegroundColor Red

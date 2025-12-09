@@ -39,6 +39,15 @@ namespace Config {
         constexpr float CameraDistance=3.0f;
     }
     constexpr float PI=3.14159265358979323846f;
+
+    namespace Fog {
+        constexpr float FogStart = 5.0f;   
+        constexpr float FogEnd = 20.0f;   
+        constexpr int FogColorR = 135;    
+        constexpr int FogColorG = 206;
+        constexpr int FogColorB = 235;
+    
+}
 }
 
 #if defined(__clang__)

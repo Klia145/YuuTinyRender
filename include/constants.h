@@ -28,6 +28,12 @@
     inline constexpr float CameraDistance=Config::Camera::CameraDistance;
     inline constexpr float WheelZoonSpeed=Config::Camera::WheelZoonSpeed;
     inline constexpr float PI=Config::PI;
+
+    inline constexpr float FogStart=Config::Fog::FogStart;
+    inline constexpr float FogEnd=Config::Fog::FogEnd;
+    inline constexpr int FogColorR=Config::Fog::FogColorR;
+    inline constexpr int FogColorG=Config::Fog::FogColorG;
+    inline constexpr int FogColorB=Config::Fog::FogColorB;
     
 #else
     // 旧版本（运行时常量，需要.cpp文件定义）

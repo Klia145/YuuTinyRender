@@ -3,7 +3,7 @@
 #include<cmath>
 
 Camera::Camera(vec3 pos,vec3 target,float fov,float aspect,float near,float far):position(pos),target(target),up(0,1,0),
-fov(fov),aspect(aspect),near_plane(near),far_plane(far){
+fov(fov),aspect(aspect),near_plane(near),far_plane(far),projection_mode(ProjectionMode::PERSPECTIVE),ortho_size(5.0f){
 
     vec3 offset=position-target;
     distance=offset.length();
@@ -15,9 +15,33 @@ mat4 Camera::getViewMatrix()const{
     return mat4::lookAt(position,target,up);
 }
 mat4 Camera::getProjectionMatrix() const{
-    return mat4::perspective(fov,aspect,near_plane,far_plane);
+    if(projection_mode==ProjectionMode::PERSPECTIVE){
+        return mat4::perspective(fov,aspect,near_plane,far_plane);
+    }
+    else{
+        float half_width=ortho_size*aspect;
+        float half_height=ortho_size;
+        return mat4::orthographic(-half_width,half_width,-half_height,half_height,near_plane,far_plane);
+    }
+    
 }
-
+void Camera::toggleProjectionMode(){
+    if(projection_mode==ProjectionMode::PERSPECTIVE){
+        projection_mode=ProjectionMode::ORTHOGRAPHIC;
+    }
+    else{
+        projection_mode=ProjectionMode::PERSPECTIVE;
+    }
+}
+void Camera::setProjectionMode(ProjectionMode mode){
+    projection_mode=mode;
+    if(mode==ProjectionMode::PERSPECTIVE){
+        std::cout<<"透视投影"<<std::endl;
+    }
+    else{
+        std::cout<<"正交投影"<<std::endl;
+    }
+}
 mat4 Camera::getViewProjectionMatrix()const{
     return getProjectionMatrix()*getViewMatrix();
 }
@@ -38,6 +62,8 @@ void Camera::zoom(float delta_distance) {
     
     if (distance < 1.5f) distance = 1.5f; 
     if (distance > 30.0f) distance = 30.0f;
+
+    ortho_size=distance*0.8f;
     
     position.x = target.x + distance * cos(pitch) * sin(yaw);
     position.y = target.y + distance * sin(pitch);
@@ -102,4 +128,44 @@ void Camera::focusPreset(ViewPreset preset,const vec3&target_pos,float view_dist
     position.x = target.x + distance * std::cos(pitch) * std::sin(yaw);
     position.y = target.y + distance * std::sin(pitch);
     position.z = target.z + distance * std::cos(pitch) * std::cos(yaw);
+}
+vec3 Camera::screenToWorldRay(int screen_x,int screen_y,int width,int height)const{
+    float ndc_x=(2.0f*screen_x)/width-1.0f;
+    float ndc_y = 1.0f - (2.0f * screen_y) / height;
+
+    vec4 clip(ndc_x, ndc_y, -1.0f, 1.0f);
+
+
+    mat4 inv_proj = getProjectionMatrix().inverse();
+    vec4 eye = inv_proj * clip;
+    eye.w = 0.0f;  // 方向向量
+
+    mat4 inv_view=getViewMatrix().inverse();
+    vec4 world=inv_view*eye;
+
+    vec3 ray_dir(world.x,world.y,world.z);
+    return ray_dir.normalize();
+
+
+}
+
+vec3 Camera::rayGroundIntersection(const vec3&ray_origin,const vec3&ray_dir)const{
+    if (std::abs(ray_dir.y) < 0.0001f) {
+        // 射线平行于地面，返回远点
+        return vec3(ray_origin.x + ray_dir.x * 1000.0f, 
+                   0.0f, 
+                   ray_origin.z + ray_dir.z * 1000.0f);
+    }
+    
+    float t = -ray_origin.y / ray_dir.y;
+    
+    if (t < 0) {
+        return vec3(10000.0f, 10000.0f, 10000.0f);
+    }
+    
+    return vec3(
+        ray_origin.x + t * ray_dir.x,
+        0.0f,
+        ray_origin.z + t * ray_dir.z
+    );
 }
