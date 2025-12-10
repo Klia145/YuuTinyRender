@@ -90,7 +90,7 @@ int main(int argc,char* argv[]){
     bool running=true;
     bool show_grid=true;
     bool simple_grid=false;
-    bool GammaCorrection=true;
+    bool GammaCorrection=false;
     bool enable_fog=false;
 
     Uint32 Last_time=SDL_GetTicks();

@@ -619,10 +619,8 @@ vec3 barycentric(vec2 A, vec2 B, vec2 C, vec2 P) {
 
     vec3 u = s[0].cross(s[1]);
     if (std::abs(u.z) < 1e-2) return vec3(-1, 1, 1);
-
- 
-
     return vec3(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
+    //三角形算叉积
 }
 void DrawLine3D(TGAImage& image, const mat4& vp, vec3 p1, vec3 p2, int w, int h, TGAColor color) {
     vec4 v1 = vp * vec4(p1.x, p1.y, p1.z, 1.0f);
@@ -660,7 +658,6 @@ void DrawInfiniteGrid(TGAImage& image, const mat4& view, const mat4& proj, const
     TGAColor color_z_axis(50, 50, 255, 255); 
     
     mat4 vp = proj * view; 
-
 
     float snap_x = std::floor(camera_pos.x / grid_spacing) * grid_spacing;
     float snap_z = std::floor(camera_pos.z / grid_spacing) * grid_spacing;
@@ -701,13 +698,13 @@ void triangle_with_texture(
     
     int width = image.width();
     int height = image.height();
-    
+    //寻找最远和最近的坐标
     int min_x = std::max(0, (int)std::min(x0, std::min(x1, x2)));
     int min_y = std::max(0, (int)std::min(y0,std::min(y1,y2)));
     int max_x = std::min(width - 1, (int)std::max(x0,std::max(x1,x2)));
     int max_y = std::min(height - 1, (int)std::max(y0,std::max(y1,y2)));
     
-
+    //遍历三角中的每一个像素
     for (int x = min_x; x <= max_x; x++) {
         for (int y = min_y; y <= max_y; y++) {
             vec3 bc = barycentric(vec2(x0, y0), vec2(x1, y1), vec2(x2, y2), 
@@ -715,32 +712,27 @@ void triangle_with_texture(
             
             if (bc.x < 0 || bc.y < 0 || bc.z < 0) continue;
             
-            // 深度插值
+            //计算深度通过重心坐标进行远近插值
             float z = z0 * bc.x + z1 * bc.y + z2 * bc.z;
             int idx = x + y * width;
             
             if (zBuffer[idx] < z) {
                 zBuffer[idx] = z;
                 
-                // ✅ 世界坐标插值（用于计算距离）
                 vec3 world_pos = world0 * bc.x + world1 * bc.y + world2 * bc.z;
                 
-                // UV插值
                 vec2 uv = uv0 * bc.x + uv1 * bc.y + uv2 * bc.z;
-                
-                // 采样纹理
+
                 int tex_x = (int)(uv.u * texture.width());
                 int tex_y = (int)(uv.v * texture.height());
                 TGAColor tex_color = texture.get(tex_x, tex_y);
-                
-                // 应用光照
+
                 vec3 color(
                     tex_color.bgra[2] / 255.0f * intensity,
                     tex_color.bgra[1] / 255.0f * intensity,
                     tex_color.bgra[0] / 255.0f * intensity
                 );
                 
-                // ✅ 应用雾效
                 if (enable_fog) {
                     float distance = (world_pos - camera_pos).length();
                     float fog_factor = (distance - fog_start) / (fog_end - fog_start);
@@ -751,7 +743,6 @@ void triangle_with_texture(
                     color.z = color.z * (1.0f - fog_factor) + fog_color.z * fog_factor;
                 }
                 
-                // 转回颜色
                 TGAColor final_color(
                     (unsigned char)(color.z * 255),
                     (unsigned char)(color.y * 255),

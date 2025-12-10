@@ -1,6 +1,10 @@
 #pragma once
 #include "vec3.h"
 #include "mat4.h"
+#include <cmath>
+#include "vec2.h"
+#include "vec4.h"
+
 
 int cross(int dx, int dy, int ex, int ey);
 float cross(float dx, float dy, float ex, float ey);

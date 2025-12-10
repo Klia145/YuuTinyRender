@@ -153,10 +153,26 @@ mat4 mat4::orthographic(float left,float right,float bottom,float top,float near
     result.m[3][3]=1.0f;
     return result;
 }
+
+//高斯消元法，本质上是让矩阵左侧变成对角矩阵。进而就能知道反矩阵到底是什么。
+
 mat4 mat4::inverse()const{
     mat4 result(0);
 
+    //矩阵初始化。
     float augmented[4][8];
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            // 左边填原矩阵
+            augmented[i][j] = this->m[i][j]; 
+        }
+        for (int j = 4; j < 8; j++) {
+            // 右边填单位矩阵：对角线为1，其余为0
+            // j-4 == i 意味着在右半部分的对角线上
+            augmented[i][j] = (j - 4 == i) ? 1.0f : 0.0f;
+        }
+    }
+    //：高斯消元1：找主元
     for(int i=0;i<4;i++){
         int pivot=i;
         for(int j=0;j<4;j++){
@@ -169,14 +185,17 @@ mat4 mat4::inverse()const{
                 std::swap(augmented[i][j],augmented[pivot][j]);
             }
         }
+        //这一步让矩阵中的对角线上的元素变成1
         if(std::abs(augmented[i][i])<0.00001f){
             return mat4();
-        }
+        }//确保不是奇异矩阵
 
+        //归一化。对角线变1
         float pivotValue=augmented[i][i];
         for(int j=0;j<8;j++){
             augmented[i][j]/=pivotValue;
         }
+        //消元。其他行变0
         for(int j=0;j<4;j++){
             if(j!=i){
                 float factor=augmented[j][i];
@@ -186,6 +205,7 @@ mat4 mat4::inverse()const{
             }
         }
     }
+    //最后提取结果：
     for(int i=0;i<4;i++){
         for(int j=0;j<4;j++){
             result.m[i][j]=augmented[i][j+4];
