@@ -1,6 +1,8 @@
 #include"mat4.h"
 #include<cmath>
 #include"utils.h"
+#include"geometry.h"
+
 mat4::mat4():mat4(1.0f){};
 mat4::mat4(float diagonal){
     for(int i=0;i<4;i++){

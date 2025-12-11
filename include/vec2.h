@@ -1,7 +1,10 @@
 #pragma once
 #include<iostream>
 struct vec2{
-    float u,v;
+    union {
+        struct{float u,v;};
+        struct {float x,y;};
+    };
     vec2(float u=0,float v=0);
     vec2 operator+(const vec2&other) const;
     vec2 operator-(const vec2& other)const;

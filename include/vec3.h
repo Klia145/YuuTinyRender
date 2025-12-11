@@ -7,13 +7,16 @@ struct vec3{
     vec3 operator+(const vec3&v)const;
     vec3 operator-(const vec3&v)const;
     vec3 operator*(float t)const;
-    bool operator==(float n)const;
+    vec3& operator*=(float t);
+    vec3& operator/=(float t);
+    bool operator==(const vec3& v)const;
     float operator*(const vec3&v)const;
     vec3 cross(const vec3&v)const;
     float length()const;
     vec3 normalize()const;
     float dot(const vec3&v)const;
     friend std::ostream& operator<<(std::ostream&os,const vec3&v);
+    
 
     
 

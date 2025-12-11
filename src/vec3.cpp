@@ -41,6 +41,27 @@ float vec3::dot(const vec3& v) const {
     return x * v.x + y * v.y + z * v.z;
 }
 
-bool vec3::operator==(float n)const{
-    return x==n&&y==n&&z==n;
+bool vec3::operator==(const vec3&v )const{
+    static const float EPSILON=1e-6f;
+    return std::abs(x - v.x) < EPSILON &&
+           std::abs(y - v.y) < EPSILON &&
+           std::abs(z - v.z) < EPSILON;   
+
+    
+}
+vec3& vec3::operator*=(float n){
+    x*=n;
+    y*=n;
+    z*=n;
+    return *this;
+}
+vec3& vec3::operator/=(float n){
+    static const float EPSILON=1e-6f;
+    if(std::abs(n)<EPSILON){
+        n=EPSILON;
+    }
+    x/=n;
+    y/=n;
+    z/=n;
+    return *this;
 }

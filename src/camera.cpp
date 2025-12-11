@@ -1,6 +1,7 @@
 #include "camera.h"
 #include"utils.h"
 #include<cmath>
+#include"geometry.h"
 
 Camera::Camera(vec3 pos,vec3 target,float fov,float aspect,float near,float far):position(pos),target(target),up(0,1,0),
 fov(fov),aspect(aspect),near_plane(near),far_plane(far),projection_mode(ProjectionMode::PERSPECTIVE),ortho_size(5.0f){

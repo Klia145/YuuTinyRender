@@ -5,6 +5,7 @@
 #include"colorTable.h"
 #include"geometry.h"
 #include"camera.h"
+#include"DefaultShader.h"
 void copy_image_to_surface(TGAImage&image,SDL_Surface* surface,int w,int h){
     SDL_LockSurface(surface);
 
@@ -240,7 +241,14 @@ int main(int argc,char* argv[]){
 
 
 
-        Render(framebuffer,model,zbuffer,texture,light_dir,mvp,camera.getPosition(),enable_fog);
+        DefaultShader shader(&model,&texture,mvp,light_dir,camera.getPosition(),enable_fog);
+        RenderWithShader(framebuffer,model,zbuffer,&shader);
+
+
+
+        /**
+         *@brief 目前还是用复制的方法，性能较低。之后再尝试其他方式。
+        */
         copy_image_to_surface(framebuffer,screen,width,height);
         if(GammaCorrection){
             applyGammaCorrection(framebuffer);
