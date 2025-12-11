@@ -18,6 +18,7 @@ namespace Config {
     constexpr const char* output_path = "output_exe/";
     constexpr const char* African_Head = "models/AfricanHead.obj";
     constexpr const char* African_Head_Diffuse = "obj/african_head/african_head_diffuse.tga";
+    constexpr const float FLT_MAX=1e-9;
 
     constexpr float MSAA_4X_OFFSETS[4][2] = {
         {0.25f, 0.25f}, {0.75f, 0.25f},

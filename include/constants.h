@@ -13,6 +13,7 @@
     inline constexpr auto output_path = Config::output_path;
     inline constexpr auto African_Head = Config::African_Head;
     inline constexpr auto African_Head_Diffuse = Config::African_Head_Diffuse;
+    inline constexpr float FLT_MAX= Config::FLT_MAX;
     
     inline constexpr float MouseSensitivity = Config::MouseSensitivity;
     inline constexpr float ROTATE_SENSITIVITY = Config::ROTATE_SENSITIVITY;

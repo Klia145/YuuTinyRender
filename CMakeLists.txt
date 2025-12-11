@@ -18,10 +18,10 @@ set(SDL2_DIR "${CMAKE_SOURCE_DIR}/x86_64-w64-mingw32")
 include_directories(${SDL2_DIR}/include/SDL2)
 link_directories(${SDL2_DIR}/lib)
 
-# 收集src目录的源文件
+
 file(GLOB_RECURSE SRC_FILES "src/*.cpp")
 
-# 收集imgui核心文件
+
 file(GLOB IMGUI_CORE_FILES "imgui/*.cpp")
 
 # 手动指定需要的ImGui backend（只要SDL2相关的）
