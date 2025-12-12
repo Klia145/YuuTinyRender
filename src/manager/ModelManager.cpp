@@ -1,16 +1,18 @@
 #include"manager/ModelManager.h"
 #include"constants.h"
-
+#include<filesystem>
+namespace fs=std::filesystem;
 ModelManager::ModelManager(){
     current_index=static_cast<size_t>(-1);
-    AddModel("Cube","obj/cube.obj","obj/cube_diffuse.tga");
-    AddModel("AfricanHead","African_Head",African_Head_Diffuse);
+    autoScanModels();
+    if(!models.empty()){
+        switchTo(0);
+    }
     /**
      *@brief AddModel
      *可能还需要再添加几个例子模型。但目前就先添加两个
     */
 
-    switchTo(0);
 }
 void ModelManager::AddModel
 (
@@ -34,7 +36,7 @@ void ModelManager::AddModel
     entry.is_loaded=false;
 
     models.push_back(entry);
-    std::cout<<"添加模型"<<name<<std::endl;
+    std::cout<<"add model"<<name<<std::endl;
 }
 bool ModelManager::loadModelData(size_t index){
     if(index>=models.size())return false;
@@ -45,12 +47,12 @@ bool ModelManager::loadModelData(size_t index){
     }
     catch(std::exception& e){
 
-        std::cout<<"加载模型失败"<<e.what()<<std::endl;
+        std::cout<<"loadding model failed"<<e.what()<<std::endl;
         return false;
     }
     models[index].diffuse=new TGAImage();
     if(!models[index].diffuse->read_tga_file(models[index].texture_path.c_str())){
-        std::cout<<"加载纹理失败"<<std::endl;
+        std::cout<<"贴图加载失败，继续..."<<std::endl;
         delete models[index].model;
         delete models[index].diffuse;
         models[index].model=nullptr;
@@ -61,7 +63,7 @@ bool ModelManager::loadModelData(size_t index){
     if(!models[index].normal_path.empty()){
         models[index].normal=new TGAImage();
         if (!models[index].normal->read_tga_file(models[index].normal_path.c_str())) {
-            std::cout << "法线贴图加载失败，继续..." << std::endl;
+            std::cout << "normal_texture loadding failed, continue..." << std::endl;
             delete models[index].normal;
             models[index].normal = nullptr;
         }
@@ -73,7 +75,7 @@ bool ModelManager::loadModelData(size_t index){
     if(!models[index].specular_path.empty()){
         models[index].specular=new TGAImage();
         if (!models[index].specular->read_tga_file(models[index].specular_path.c_str())) {
-            std::cout << "高光贴图加载失败，继续..." << std::endl;
+            std::cout << "specular_texture loadding failed, continue..." << std::endl;
             delete models[index].specular;
             models[index].specular = nullptr;
         }
@@ -96,6 +98,10 @@ bool ModelManager::loadModelData(size_t index){
     }
     models[index].center=(bounding_min+bounding_max)*0.5f;
     models[index].radius=(bounding_max-bounding_min).length()*0.5f;
+
+    
+
+    models[index].is_loaded=true;
     if(isModelComplete(index)){
         return true;
     }
@@ -120,15 +126,24 @@ bool ModelManager::isModelComplete(size_t index)const{
     }
     return true;
 }
-bool ModelManager::switchTo(size_t index){
-    if(!loadModelData(index)){
+bool ModelManager::switchTo(size_t index) {
+    if (index >= models.size()) {
+        std::cerr << "error: switch to invalid model index" << index << std::endl;
         return false;
     }
-    current_index=index;
-    std::cout<<"切换模型到:"<<models[index].name<<std::endl;
+    
+    if (index == current_index) {
+        return true; 
+    }
+    
+    current_index = index;
+    
+    if (!models[index].is_loaded) {
+        return loadModelData(index);
+    }
+    
     return true;
 }
-
 ModelManager::~ModelManager(){
     for(auto&entry:models){
         if(entry.is_loaded){
@@ -158,7 +173,7 @@ const std::string& ModelManager::getModelName(size_t index) const {
     if(isModelComplete(index))return models[index].name;
     }
     catch(std::exception& e){
-        std::cout<<"获取模型名称失败"<<e.what()<<std::endl;
+        std::cout<<"error: getting model name failed, index:"<<e.what()<<std::endl;
 
     }
     static const std::string empty_string="";
@@ -172,4 +187,60 @@ size_t ModelManager::getCurrentIndex() const {
 bool ModelManager::hasModel() const {
     return current_index < models.size() && 
            models[current_index].is_loaded;
+}
+Model* ModelManager::getModel(size_t index){
+    if(index>=models.size())return nullptr;
+    if(!models[index].is_loaded){
+        loadModelData(index);
+    }
+    return models[index].model;
+}
+
+TGAImage* ModelManager::getTexture(size_t index){
+    if(index>=models.size())return nullptr;
+    if (!models[index].is_loaded) {
+        loadModelData(index);
+    }
+    return models[index].diffuse;
+}
+
+void ModelManager::autoScanModels(){
+    std::string base_path="obj/";
+    for (const auto& entry : fs::directory_iterator(base_path)) {
+        if (!entry.is_directory()) continue;  // 跳过文件
+        
+        std::string dir_name = entry.path().filename().string();
+        std::string model_path = base_path + dir_name + "/" + dir_name + ".obj";
+        std::string diffuse_path = base_path + dir_name + "/" + dir_name + "_diffuse.tga";
+        std::string normal_path = base_path + dir_name + "/" + dir_name + "_nm.tga";
+        std::string specular_path = base_path + dir_name + "/" + dir_name + "_spec.tga";
+        
+        if (fs::exists(model_path) && fs::exists(diffuse_path)) {
+            const char* normal = fs::exists(normal_path) ? normal_path.c_str() : nullptr;
+            const char* specular = fs::exists(specular_path) ? specular_path.c_str() : nullptr;
+            
+            AddModel(dir_name, model_path.c_str(), diffuse_path.c_str(), 
+                    normal, specular);
+            
+            std::cout << "✓ Get model:  " << dir_name << std::endl;
+        }
+    }
+    
+    std::cout << "Loading the models " << models.size() << " done." << std::endl;
+}
+Model* ModelManager::getCurrentModel(){
+    if (current_index == SIZE_MAX || current_index >= models.size()) {
+        return nullptr;
+    }
+    return models[current_index].model;
+}
+
+
+
+// ===== 添加这个函数！=====
+vec3 ModelManager::getCurrentModelCenter() const {
+    if (current_index >= models.size()) {
+        return vec3(0, 0, 0);
+    }
+    return models[current_index].center;
 }

@@ -7,11 +7,12 @@
     // 映射到全局命名空间（让旧代码无缝使用）
     inline constexpr int width = Config::width;
     inline constexpr int height = Config::height;
-    
+    /*
     inline constexpr auto outputCubeRender = Config::outputCubeRender;
     inline constexpr auto output_head = Config::output_head;
     inline constexpr auto output_path = Config::output_path;
     inline constexpr auto African_Head = Config::African_Head;
+    */
     inline constexpr auto African_Head_Diffuse = Config::African_Head_Diffuse;
     inline constexpr float FLT_MAX= Config::FLT_MAX;
     
@@ -35,6 +36,9 @@
     inline constexpr int FogColorR=Config::Fog::FogColorR;
     inline constexpr int FogColorG=Config::Fog::FogColorG;
     inline constexpr int FogColorB=Config::Fog::FogColorB;
+
+    inline constexpr int current_group=Config::ModelManager::current_group;
+    inline constexpr int current_model=Config::ModelManager::current_model_index;
     
 #else
     // 旧版本（运行时常量，需要.cpp文件定义）

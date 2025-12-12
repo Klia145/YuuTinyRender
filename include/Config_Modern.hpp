@@ -12,11 +12,12 @@
 namespace Config {
     constexpr int width = 800; 
     constexpr int height = 800;
-
+    /*
     constexpr const char* outputCubeRender = "cube_render.png";
     constexpr const char* output_head = "head.png";
     constexpr const char* output_path = "output_exe/";
     constexpr const char* African_Head = "models/AfricanHead.obj";
+    */
     constexpr const char* African_Head_Diffuse = "obj/african_head/african_head_diffuse.tga";
     constexpr const float FLT_MAX=1e-9;
 
@@ -48,7 +49,12 @@ namespace Config {
         constexpr int FogColorG = 206;
         constexpr int FogColorB = 235;
     
-}
+    }
+    //ModelManager
+    namespace ModelManager {
+        constexpr int current_group=0;
+        constexpr int current_model_index=0;
+    }
 }
 
 #if defined(__clang__)

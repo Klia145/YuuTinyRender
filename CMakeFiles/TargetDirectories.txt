@@ -1,0 +1,3 @@
+D:/Program/Software_Rasterizer/CMakeFiles/viewer.dir
+D:/Program/Software_Rasterizer/CMakeFiles/edit_cache.dir
+D:/Program/Software_Rasterizer/CMakeFiles/rebuild_cache.dir

@@ -4,8 +4,7 @@
 #include<iostream>
 #include<windows.h>
 #include "stb_image_write.h"
-
-
+#include "colorTable.h"
 
 TGAImage::TGAImage(const int w,const int h,const int bpp,TGAColor c):w(w),h(h),bpp(bpp),data(w*h*bpp,0){
     for(int i=0;i<h;i++){
@@ -263,4 +262,18 @@ bool TGAImage::write_png_file(const std::string filename) {
         rgb_data[i*3+2] = data[i*3];   // B
     }
     return stbi_write_png(filename.c_str(), w, h, 3, rgb_data.data(), w*3);
+}
+void TGAImage::clear(const TGAColor&color){
+    for(int y=0;y<this->height();y++){
+        for(int x=0;x<this->width();x++){
+            this->set(x,y,color);
+        }
+    }
+}
+void TGAImage::clear(){
+    for(int y=0;y<this->height();y++){
+        for(int x=0;x<this->width();x++){
+            this->set(x,y,TGAColor(0,0,0,255));
+        }
+    }
 }

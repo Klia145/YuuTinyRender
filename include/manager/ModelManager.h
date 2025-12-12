@@ -4,6 +4,7 @@
 #include<string>
 #include<cmath>
 #include<vector>
+#include<filesystem>
 
 class ModelManager
 {
@@ -54,6 +55,8 @@ class ModelManager
     );
 
     bool switchTo(size_t index);
+    Model* getModel(size_t index);
+    TGAImage*getTexture(size_t index);
 
     Model* getCurrentModel();
 
@@ -69,6 +72,13 @@ class ModelManager
 
     void removeModel(size_t index);
     void removeCurrentModel();
+    void autoScanModels();
+    vec3 getModelCenter(size_t index)const{
+        if(index>=models.size())return vec3(0,0,0);
+        return models[index].center;
+    }
+    vec3 getCurrentModelCenter() const;
+
 
 
 };

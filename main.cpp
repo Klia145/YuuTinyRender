@@ -6,6 +6,25 @@
 #include"geometry.h"
 #include"camera.h"
 #include"DefaultShader.h"
+#include"shader/WireframeShader.h"  
+#include"manager/ModelManager.h"
+#include "shader/BlinnPhongShader.h"  
+#include"Light.h"
+#include <memory> 
+#include <windows.h> 
+
+enum class RenderMode{
+    DEFAULT,BLINN_PHONG,WIREFRAME,COUNT
+    };
+const char* getRenderModeName(RenderMode mode) {
+    switch(mode) {
+        case RenderMode::DEFAULT:     return "默认模式";
+        case RenderMode::BLINN_PHONG: return "Blinn-Phong";
+        case RenderMode::WIREFRAME:   return "线框模式";
+        default:                      return "未知模式";
+    }
+}
+    
 void copy_image_to_surface(TGAImage&image,SDL_Surface* surface,int w,int h){
     SDL_LockSurface(surface);
 
@@ -27,12 +46,14 @@ void copy_image_to_surface(TGAImage&image,SDL_Surface* surface,int w,int h){
 }
 
 int main(int argc,char* argv[]){
-
+    SetConsoleOutputCP(65001);  // UTF-8
+    system("chcp 65001 > nul");
+    // ==================================
+    
     if(SDL_Init(SDL_INIT_VIDEO)<0){
         std::cerr<<"Error initializing SDL:"<<SDL_GetError()<<std::endl;
         return 1;
     }
-
     SDL_Window* window=SDL_CreateWindow(
         "Software Rasterizer-Yuu's Interactive Viewer",
         SDL_WINDOWPOS_CENTERED,
@@ -47,16 +68,25 @@ int main(int argc,char* argv[]){
     SDL_Surface* screen=SDL_GetWindowSurface(window);
     std::cout<<" 加载模型和贴图"<<std::endl;
 
+    ModelManager model_manager;
+    model_manager.switchTo(0);
+    Model* model=model_manager.getCurrentModel();
+    TGAImage* texture=model_manager.getCurrentTexture();
+    RenderMode render_mode=RenderMode::DEFAULT;
+    std::cout << "当前索引: " << model_manager.getCurrentIndex() << std::endl;
+    std::cout << "模型指针: " << model << std::endl;
+    std::cout << "纹理指针: " << texture << std::endl;
+
+    /*
     Model model(African_Head);
     TGAImage texture;
-
-     
     if (!texture.read_tga_file(African_Head_Diffuse)) {
         std::cerr << "Failed to load texture" << std::endl;
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
     }
+    */
     std::cout << "==================================" << std::endl;
     std::cout << "SDL Viewer Started!" << std::endl;
     std::cout << "==================================" << std::endl;
@@ -66,6 +96,8 @@ int main(int argc,char* argv[]){
     std::cout << "  Mouse Wheel: Zoom" << std::endl;
     std::cout << "  ---" << std::endl;
     std::cout << "  P: Toggle Projection (Perspective/Orthographic)" << std::endl;  
+    std::cout << "  shift+1/2/3/4: 切换模型\n";          
+    std::cout << "  ctrl+z: 线框模式切换\n";            
     std::cout << "  F: Default view" << std::endl;
     std::cout << "  G: Toggle Grid" << std::endl; 
     std::cout<< "ctrl+f: Open Fog"<<std::endl;
@@ -80,7 +112,11 @@ int main(int argc,char* argv[]){
     std::cout << "==================================" << std::endl;
     
     // 渲染参数
+    SunLight sun_light(vec3(1, 1, 1), vec3(1, 1, 1), 1.0f);
+    sun_light.setTimeOfDay(14.0f);  // 下午2点
+    /*
     vec3 light_dir=normalize(vec3(1,1,1));
+    */
     
     Camera camera(vec3(0,0,3),vec3(0,0,0),Fov,aspect,Near,Far);
     bool mouse_left_down=false;
@@ -94,8 +130,19 @@ int main(int argc,char* argv[]){
     bool GammaCorrection=false;
     bool enable_fog=false;
 
+
     Uint32 Last_time=SDL_GetTicks();
     int frame_count=0;
+
+    vec3 model_center = model_manager.getCurrentModelCenter();
+    camera.focusOn(model_center, 3.0f);
+
+    std::cout << "📍 启动时聚焦到: (" << model_center.x << ", " 
+          << model_center.y << ", " << model_center.z << ")" << std::endl;
+
+    std::cout << "==================================" << std::endl;
+    std::cout << "SDL Viewer Started!" << std::endl;
+    
 
     while(running){
         SDL_Event event;
@@ -103,8 +150,11 @@ int main(int argc,char* argv[]){
             if(event.type==SDL_QUIT){
                 running=false;
             }
+            if (sun_light.auto_rotate) {
+            sun_light.update(0.016f);  // 假设 60 FPS
+            } 
             if(event.type==SDL_KEYDOWN){
-                vec3 model_center=model.getCenter();
+                vec3 model_center=model_manager.getCurrentModelCenter();
                 bool ctrl_pressed=(SDL_GetModState()&KMOD_CTRL);
                 if(event.key.keysym.sym==SDLK_KP_PERIOD){
                     
@@ -114,6 +164,44 @@ int main(int argc,char* argv[]){
                 if(event.key.keysym.sym==SDLK_p){
                     camera.toggleProjectionMode();
                 }
+                bool shift_pressed = (SDL_GetModState() & KMOD_SHIFT);
+                if (event.key.keysym.sym >= SDLK_1 && event.key.keysym.sym <= SDLK_9) {
+                    if (shift_pressed) {
+                       int index = event.key.keysym.sym - SDLK_1;  // 1→0, 2→1, 3→2...
+                       
+                        if (index <(int) model_manager.getModelCount()) {
+                            model_manager.switchTo(index);
+                            std::cout << "切换到模型 " << (index + 1) << std::endl;
+                           
+                           // 重新获取模型指针（重要！）
+                            model = model_manager.getCurrentModel();
+                            texture = model_manager.getCurrentTexture();
+                        }
+                        else {
+                            std::cout << "没有模型 " << (index + 1) << "（共 " 
+                                     << model_manager.getModelCount() << " 个）" << std::endl;
+                       }
+                   }
+                }
+
+                /*
+                if(event.key.keysym.sym==SDLK_1&&(event.key.keysym.mod&KMOD_SHIFT)){
+                    model_manager.switchTo(0);
+                    std::cout << "切换到模型 1" << std::endl;
+                }
+                if(event.key.keysym.sym==SDLK_2&&(event.key.keysym.mod&KMOD_SHIFT)){
+                    model_manager.switchTo(1);
+       
+                    std::cout << "切换到模型 2" << std::endl;
+                }
+                if(event.key.keysym.sym==SDLK_3&&(event.key.keysym.mod&KMOD_SHIFT)){
+                    model_manager.switchTo(2);
+                    std::cout << "切换到模型 3" << std::endl;
+                }
+                if(event.key.keysym.sym==SDLK_4&&(event.key.keysym.mod&KMOD_SHIFT)){
+                    model_manager.switchTo(3);
+                    std::cout << "切换到模型 4" << std::endl;
+                }*/
                 if(event.key.keysym.sym==SDLK_u){
                     enable_fog=!enable_fog;
                 }
@@ -143,6 +231,15 @@ int main(int argc,char* argv[]){
                         camera.focusPreset(ViewPreset::TOP,model_center,3.0f);
                     }
                 }
+                if(event.key.keysym.sym==SDLK_t){
+                    float current_time=sun_light.getTimeOfDay();
+                     sun_light.setTimeOfDay(current_time + 1.0f);
+
+                }
+                if(event.key.keysym.sym==SDLK_r){
+                    sun_light.auto_rotate=!sun_light.auto_rotate;
+                    std::cout << "太阳自动旋转: " << (sun_light.auto_rotate ? "开" : "关") << std::endl;
+                }
 
                 if(event.key.keysym.sym==SDLK_g){
                     if(ctrl_pressed){
@@ -161,9 +258,17 @@ int main(int argc,char* argv[]){
                         std::cout<<"关闭伽马校正"<<std::endl;
                     }
                 }
+                if(event.key.keysym.sym==SDLK_z&&(event.key.keysym.mod&KMOD_LCTRL))
+                {
+                    int current=static_cast<int>(render_mode);
+                    int next=(current+1)%static_cast<int>(RenderMode::COUNT);
+                    render_mode=static_cast<RenderMode>(next);
+                    std::cout<<"切换渲染模式为"<<getRenderModeName(render_mode)<<std::endl;
+                }
                 if(event.key.keysym.sym==SDLK_ESCAPE){
                     running=false;
                 }
+
 
             }
             if(event.type==SDL_BUTTON_LEFT){
@@ -219,11 +324,15 @@ int main(int argc,char* argv[]){
             }
         }
         TGAImage framebuffer(width,height,3,ColorTable::getColor(ColorName::BLACK));
-        render_skyBox(framebuffer);
         std::vector<float>zbuffer(width*height,-1e9);
+
+
+        framebuffer.clear();
+        render_skyBox(framebuffer);
+
+        
         mat4 view=camera.getViewMatrix();
         mat4 projection=camera.getProjectionMatrix();
-
         mat4 mvp=camera.getViewProjectionMatrix();
 
         if(show_grid){
@@ -238,14 +347,31 @@ int main(int argc,char* argv[]){
                 */
             }
         }
-
-
-
-        DefaultShader shader(&model,&texture,mvp,light_dir,camera.getPosition(),enable_fog);
-        RenderWithShader(framebuffer,model,zbuffer,&shader);
-
-
-
+        std::unique_ptr<IShader>shader;
+        switch(render_mode){
+            case RenderMode::DEFAULT:{
+                 shader = std::make_unique<DefaultShader>(
+                 model, texture, mvp, sun_light, 
+                camera.getPosition(), enable_fog
+        );
+                break;
+            }
+            case RenderMode::BLINN_PHONG: {
+                 shader = std::make_unique<BlinnPhongShader>(
+                model, texture, mvp, sun_light, camera.getPosition()
+                );
+                 break;
+            }
+            case RenderMode::WIREFRAME: {
+                 shader = std::make_unique<WireframeShader>(model, mvp);
+             break;
+            }
+            default:
+            break;
+        }
+        if(shader){
+            RenderWithShader(framebuffer,*model,zbuffer,shader.get());
+        }
         /**
          *@brief 目前还是用复制的方法，性能较低。之后再尝试其他方式。
         */

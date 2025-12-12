@@ -4,9 +4,9 @@
 
 
 DefaultShader::DefaultShader(
-    Model*m ,TGAImage*tex,const mat4&mvp,const vec3&light,const vec3&cam_pos
+    Model*m ,TGAImage*tex,const mat4&mvp,const SunLight&light,const vec3&cam_pos
     ,bool fog
-):model(m),texture(tex),mvp(mvp),light_dir(light),camera_pos(cam_pos),enable_fog(fog),sampler(tex,SamplingMode::NEAREST)
+):model(m),texture(tex),mvp(mvp),light(light),camera_pos(cam_pos),enable_fog(fog),sampler(tex,SamplingMode::NEAREST)
 {
     // 构造函数只负责初始化Uniforms
     // Varying数据会在vertex()阶段填充
@@ -87,7 +87,7 @@ bool DefaultShader::fragment(vec3 bar,TGAColor&color)
     TGAColor tex_color=sampler.sample(uv);
 
     //基础光照
-    float diffuse=std::max(0.0f,normal.dot(light_dir));
+    float diffuse=std::max(0.0f,normal.dot(light.getDirection()));
     //老生常谈，环境光防止死黑
     float ambient=0.2f;
     float intensity=clamp(diffuse*0.8f+ambient,0.0f,1.0f);
@@ -106,10 +106,11 @@ bool DefaultShader::fragment(vec3 bar,TGAColor&color)
      */
 
     vec3 base_color(
-        tex_color.bgra[2]/255.0f,
-        tex_color.bgra[1]/255.0f,
-        tex_color.bgra[0]/255.0f
+        tex_color.bgra[2]/255.0f*light.getColor().x,
+        tex_color.bgra[1]/255.0f*light.getColor().y,
+        tex_color.bgra[0]/255.0f*light.getColor().z
     );
+
     base_color*=intensity;
 
     if(enable_fog){

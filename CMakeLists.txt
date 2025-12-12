@@ -19,7 +19,7 @@ include_directories(${SDL2_DIR}/include/SDL2)
 link_directories(${SDL2_DIR}/lib)
 
 
-file(GLOB_RECURSE SRC_FILES "src/*.cpp")
+file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/**/*.cpp")
 
 
 file(GLOB IMGUI_CORE_FILES "imgui/*.cpp")

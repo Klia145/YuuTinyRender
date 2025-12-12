@@ -5,6 +5,7 @@
 #include "mat4.h"
 #include "constants.h"
 #include "utils.h"
+#include"Light.h"
 #include"TextureSampler.h"
 
 /**
@@ -48,7 +49,7 @@ class DefaultShader:public IShader
      *brief 光照方向
      *平行光方向
     */
-    vec3 light_dir;
+    SunLight light;
 
     /**
      *@brief 相机位置
@@ -86,7 +87,7 @@ class DefaultShader:public IShader
 
     public:
 
-    DefaultShader(Model*m,TGAImage*tex,const mat4& _mvp,const vec3&light,const vec3&cam_pos,bool fog);
+    DefaultShader(Model*m,TGAImage*tex,const mat4& _mvp,const SunLight& _light,const vec3&cam_pos,bool fog);
 
     vec4 vertex(int iface,int nthvert) override;
 

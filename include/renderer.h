@@ -17,6 +17,8 @@
  * @param zbuffer 深度缓冲
  * @param shader Shader接口指针
  */
+
+
 void RenderWithShader(TGAImage& image,Model&model,std::vector<float>&zbuffer,IShader* shader);
 
 void rasterize_triangle_with_shader(
