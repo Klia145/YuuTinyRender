@@ -9,7 +9,9 @@
 class Application{
     private:
     SDL_Window* window;
-    SDL_Surface* screen;
+
+    SDL_Renderer* renderer;
+    SDL_Texture* framebuffer_texture;
     int width, height;
     bool running;
 
@@ -20,9 +22,6 @@ class Application{
     TGAImage* texture;
     RenderMode render_mode;
     vec3 model_center;
-    
-    
-
 
     bool show_grid;
     bool simple_grid;
@@ -37,10 +36,13 @@ class Application{
     
     Uint32 last_time;
     int frame_count;
+    int current_fps;
     public:
     Application(int width,int height);
     ~Application();
     bool init();
+    bool UI_Init();
+    void Init_Property();
     void run();
     void cleanup();
 
@@ -48,10 +50,13 @@ class Application{
     void handleEvents();
     void update(float dt);
     void render();
-    void copy_image_to_surface(TGAImage&image,SDL_Surface* surface,int w,int h);
+
+    void uploadFramebufferToTexture(const TGAImage&image);
+    void renderUI();
 
     void handleKeyboard(const SDL_Event&event);
     void handleMouse(const SDL_Event&event);
     void printControls();
+
     
 };

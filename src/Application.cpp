@@ -6,12 +6,15 @@
 #include "shader/BlinnPhongShader.h"
 #include "shader/WireframeShader.h"
 #include <iostream>
-
+#include<SDL.h>
+#include "../Imgui/imgui.h"
+#include "../imgui/backends/imgui_impl_sdl2.h"
+#include "../imgui/backends/imgui_impl_sdlrenderer2.h"
 
 Application::Application(int w, int h)
     :
     window(nullptr)
-    , screen(nullptr)
+    ,renderer(nullptr),framebuffer_texture(nullptr)
     , width(w)
     , height(h)
     , running(false)
@@ -20,7 +23,6 @@ Application::Application(int w, int h)
     , render_mode(RenderMode::DEFAULT)
     ,model_center(0, 0, 0)
     
-    // 显示选项
     , show_grid(true)
     , simple_grid(false)
     , enable_fog(false)         
@@ -32,9 +34,8 @@ Application::Application(int w, int h)
     , last_mouse_x(0)           
     , last_mouse_y(0)           
     
-    // 性能统计
     ,last_time(0)
-    , frame_count(0)
+    , frame_count(0),current_fps(0)
 {
     sun_light.setTimeOfDay(14.0f);
 }
@@ -58,7 +59,57 @@ bool Application::init(){
         std::cerr<<"SDL_CreateWindow Error: "<<SDL_GetError()<<std::endl;
         return false;
     }
-    screen=SDL_GetWindowSurface(window);
+    bool UI_Init_True_Or_False=UI_Init();
+    if(!UI_Init_True_Or_False){
+        return false;
+    }
+    Init_Property();
+    return true;
+}
+bool Application::UI_Init(){
+
+    renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC);
+
+    if(!renderer){
+        std::cerr<<"创建Renderer失败"<<SDL_GetError()<<std::endl;
+        SDL_Quit();
+        return false;
+    }
+    framebuffer_texture=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_RGB888,SDL_TEXTUREACCESS_STREAMING,width,height);
+    if (!framebuffer_texture) {
+        std::cerr << " 创建纹理失败: " << SDL_GetError() << std::endl;
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return false;
+    }
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+    io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/msyh.ttc", 18.0f, nullptr, 
+                                  io.Fonts->GetGlyphRangesChineseFull());
+    if (io.Fonts->Fonts.Size == 0) {
+        io.Fonts->AddFontDefault();
+        std::cout << "⚠️ 中文字体加载失败，使用默认字体" << std::endl;
+    }
+    
+    ImGui::StyleColorsDark();     
+    if (!ImGui_ImplSDL2_InitForSDLRenderer(window, renderer)) {
+        std::cerr << "❌ ImGui SDL2 初始化失败" << std::endl;
+        return false;
+    }
+    
+    if (!ImGui_ImplSDLRenderer2_Init(renderer)) {
+        std::cerr << "❌ ImGui Renderer 初始化失败" << std::endl;
+        ImGui_ImplSDL2_Shutdown();
+        return false;
+    }
+        
+    std::cout << " ImGui 初始化成功" << std::endl;
+    return true;
+}
+void Application::Init_Property(){
     std::cout<<"加载模型"<<std::endl;
     model_manager.switchTo(0);
     model=model_manager.getCurrentModel();
@@ -71,7 +122,6 @@ bool Application::init(){
     camera.focusPreset(ViewPreset::DEFAULT, model_center, 8.0f); 
     enable_fog=false;
     gamma_correction=false;
-    return true;
 }
 void Application::printControls() {
     std::cout << "==================================" << std::endl;
@@ -109,14 +159,14 @@ void Application::run() {
     while (running) {
         handleEvents();
         
-        float dt = 0.016f;  // 假设 60 FPS
+        float dt = 0.016f; 
         update(dt);
         render();
         
-        // FPS 统计
         frame_count++;
         Uint32 current_time = SDL_GetTicks();
         if (current_time - last_time >= 1000) {
+            current_fps = frame_count;
             std::cout << "FPS: " << frame_count << std::endl;
             frame_count = 0;
             last_time = current_time;
@@ -126,17 +176,25 @@ void Application::run() {
 void Application::handleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+
+        ImGui_ImplSDL2_ProcessEvent(&event);
+        ImGuiIO& io = ImGui::GetIO();
         if (event.type == SDL_QUIT) {
             running = false;
         }
         else if (event.type == SDL_KEYDOWN) {
-            handleKeyboard(event);
+            if (!io.WantCaptureKeyboard) {
+                handleKeyboard(event);
+            }
         }
+        
         else if (event.type == SDL_MOUSEBUTTONDOWN || 
                  event.type == SDL_MOUSEBUTTONUP ||
                  event.type == SDL_MOUSEMOTION ||
                  event.type == SDL_MOUSEWHEEL) {
-            handleMouse(event);
+            if (!io.WantCaptureMouse) {
+                handleMouse(event);
+            }
         }
     }
 }
@@ -152,7 +210,6 @@ void Application::render(){
     framebuffer.clear();
     render_skyBox(framebuffer);
     
-    // 获取矩阵
     mat4 view = camera.getViewMatrix();
     mat4 projection = camera.getProjectionMatrix();
     mat4 mvp = camera.getViewProjectionMatrix();
@@ -179,7 +236,7 @@ void Application::render(){
         case RenderMode::WIREFRAME:
             shader = std::make_unique<WireframeShader>(model, mvp);
             break;
-        case RenderMode::COUNT: // 不应该到达这里
+        case RenderMode::COUNT:
             break;    
     }
     if (shader && model) {
@@ -189,17 +246,44 @@ void Application::render(){
     if (gamma_correction) {
         applyGammaCorrection(framebuffer);
     }
+    uploadFramebufferToTexture(framebuffer);
     
-    copy_image_to_surface(framebuffer, screen, width, height);
+    SDL_RenderClear(renderer);
+    
+    // 显示 3D 场景
+    SDL_RenderCopy(renderer, framebuffer_texture, nullptr, nullptr);
+    
+    // 渲染 UI
+    renderUI();
+    
+    // 显示
+    SDL_RenderPresent(renderer);
+    /*
+    copy_image_to_surface(framebuffer,screen,width,height);
     SDL_UpdateWindowSurface(window);
+    */
+    
 }
 void Application::cleanup() {
+    ImGui_ImplSDLRenderer2_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+    if (framebuffer_texture) {
+        SDL_DestroyTexture(framebuffer_texture);
+        framebuffer_texture = nullptr;
+    }
+    
+    if (renderer) {
+        SDL_DestroyRenderer(renderer);
+        renderer = nullptr;
+    }
     if (window) {
         SDL_DestroyWindow(window);
         window = nullptr;
     }
     SDL_Quit();
 }
+/*
 void Application::copy_image_to_surface(TGAImage&image,SDL_Surface* surface,int w,int h){
     SDL_LockSurface(surface);
 
@@ -219,6 +303,7 @@ void Application::copy_image_to_surface(TGAImage&image,SDL_Surface* surface,int 
     SDL_UnlockSurface(surface);
 
 };
+*/
 void Application::handleKeyboard(const SDL_Event& event) {
     size_t old_index = model_manager.getCurrentIndex();
     InputHandler::handleKeyboard(
@@ -250,4 +335,73 @@ void Application::handleMouse(const SDL_Event& event) {
         last_mouse_x,
         last_mouse_y
     );
+}
+
+void Application::uploadFramebufferToTexture(const TGAImage&framebuffer){
+
+    void* pixels;
+    int pitch;
+    SDL_LockTexture(framebuffer_texture,nullptr,&pixels,&pitch);
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            TGAColor color = framebuffer.get(x, y);
+            Uint32* target = (Uint32*)((Uint8*)pixels + y * pitch);
+            target[x] = (color.bgra[2] << 16) | (color.bgra[1] << 8) | color.bgra[0];
+        }
+    }
+    SDL_UnlockTexture(framebuffer_texture);
+}
+void Application::renderUI() {
+    ImGui_ImplSDLRenderer2_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+    
+    // === 主信息窗口 ===
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(300, 450), ImGuiCond_FirstUseEver);
+    
+    ImGui::Begin(" Yuu's Rasterizer", nullptr);
+    
+    // 性能
+    ImGui::SeparatorText(" 性能");
+    if (current_fps >= 50) {
+        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "FPS: %d", current_fps);
+    } else if (current_fps >= 30) {
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "FPS: %d", current_fps);
+    } else {
+        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "FPS: %d", current_fps);
+    }
+    float fps_ratio = std::min(current_fps / 60.0f, 1.0f);
+    ImGui::ProgressBar(fps_ratio, ImVec2(-1, 0));
+    
+    ImGui::Spacing();
+    
+    // 相机
+    ImGui::SeparatorText("相机");
+    vec3 pos = camera.getPosition();
+    ImGui::Text("位置: (%.1f, %.1f, %.1f)", pos.x, pos.y, pos.z);
+    ImGui::Text("距离: %.2f", camera.getDistance());
+    
+    ImGui::Spacing();
+    
+    // 模型
+    ImGui::SeparatorText(" 模型");
+    if (model) {
+        ImGui::Text("顶点: %d", model->nverts());
+        ImGui::Text("面数: %d", model->nfaces());
+    }
+    
+    ImGui::Spacing();
+    
+    // 渲染状态
+    ImGui::SeparatorText(" 渲染");
+    ImGui::Text("模式: %s", getRenderModeName(render_mode));
+    ImGui::BulletText("网格: %s", show_grid ? "坐标系网格" : "简单网格");
+    ImGui::BulletText("雾效: %s", enable_fog ? "open" : "close");
+    ImGui::BulletText("伽马: %s", gamma_correction ? "open" : "close");
+    
+    ImGui::End();
+    
+    ImGui::Render();
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
 }
