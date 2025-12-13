@@ -4,7 +4,7 @@
 #include"geometry.h"
 
 Camera::Camera(vec3 pos,vec3 target,float fov,float aspect,float near,float far):position(pos),target(target),up(0,1,0),
-fov(fov),aspect(aspect),near_plane(near),far_plane(far),projection_mode(ProjectionMode::PERSPECTIVE),ortho_size(5.0f){
+fov(fov),aspect(aspect),near_plane(near),far_plane(far),projection_mode(ProjectionMode::PERSPECTIVE),ortho_size(5.0f),camera_mode(CameraMode::ORBIT),forward(0, 0, -1){
 
     vec3 offset=position-target;
     distance=offset.length();
@@ -46,9 +46,13 @@ void Camera::setProjectionMode(ProjectionMode mode){
 mat4 Camera::getViewProjectionMatrix()const{
     return getProjectionMatrix()*getViewMatrix();
 }
-void Camera::rotate(float delta_yaw,float delta_pitch){
+void Camera::rotateOrbit(float delta_yaw,float delta_pitch){
+    static int count = 0;
+    if (++count % 10 == 0) {  // 每 10 次打印一次
+        std::cout << "旋转相机 - target: (" << target.x << ", " << target.y << ", " << target.z << ")" << std::endl;
+    }
     yaw+=delta_yaw;
-    pitch+=delta_pitch;
+    pitch-=delta_pitch;
 
     const float max_pitch=1.5f;
     if(pitch>max_pitch) pitch=max_pitch;
@@ -57,6 +61,26 @@ void Camera::rotate(float delta_yaw,float delta_pitch){
     position.x = target.x + distance * cos(pitch) * sin(yaw);
     position.y = target.y + distance * sin(pitch);
     position.z = target.z + distance * cos(pitch) * cos(yaw);
+}
+void Camera::rotateFree(float delta_yaw,float delta_pitch){
+     yaw += delta_yaw;
+    pitch -= delta_pitch;
+    
+    pitch = std::max(-1.5f, std::min(1.5f, pitch));
+    
+
+    position.x = target.x + distance * cos(pitch) * sin(yaw);
+    position.y = target.y + distance * sin(pitch);
+    position.z = target.z + distance * cos(pitch) * cos(yaw);
+
+}
+void Camera::rotate(float delta_yaw,float delta_pitch){
+    if(camera_mode==CameraMode::ORBIT){
+        rotateOrbit(delta_yaw,delta_pitch);
+    }
+    else{
+        rotateFree(delta_yaw,delta_pitch);
+    }
 }
 void Camera::zoom(float delta_distance) {
     distance -= delta_distance;
@@ -120,8 +144,8 @@ void Camera::focusPreset(ViewPreset preset,const vec3&target_pos,float view_dist
             pitch = PI / 2.0f - 0.1f;
             break;
         case ViewPreset::DEFAULT:
-            yaw = PI / 4.0f;      // 45度
-            pitch = PI / 6.0f;    // 30度
+            yaw = -PI / 4.0f;      // 45度
+            pitch = PI / 5.0f;    // 30度
             break;
 
 

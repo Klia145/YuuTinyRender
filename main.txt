@@ -1,0 +1,388 @@
+
+#include<SDL.h>
+#include<iostream>
+#include"renderer.h"
+#include"constants.h"
+#include"colorTable.h"
+#include"geometry.h"
+#include"camera.h"
+#include"DefaultShader.h"
+#include"shader/WireframeShader.h"  
+#include"manager/ModelManager.h"
+#include "shader/BlinnPhongShader.h"  
+#include"Light.h"
+#include <memory> 
+#include <windows.h> 
+#include"RenderMode.h"
+    
+void copy_image_to_surface(TGAImage&image,SDL_Surface* surface,int w,int h){
+    SDL_LockSurface(surface);
+
+    for(int y=0;y<h;y++){
+        for(int x=0;x<w;x++){
+            TGAColor color=image.get(x,y);
+            Uint32* pixels=(Uint32*)surface->pixels;
+            pixels[y*w+x]=SDL_MapRGB(
+                surface->format,
+                color.bgra[2],
+                color.bgra[1],
+                color.bgra[0]
+            );
+
+        }
+    }
+    SDL_UnlockSurface(surface);
+
+}
+
+int main(int argc,char* argv[]){
+    SetConsoleOutputCP(65001); 
+    system("chcp 65001 > nul");
+    
+    if(SDL_Init(SDL_INIT_VIDEO)<0){
+        std::cerr<<"Error initializing SDL:"<<SDL_GetError()<<std::endl;
+        return 1;
+    }
+    SDL_Window* window=SDL_CreateWindow(
+        "Software Rasterizer-Yuu's Interactive Viewer",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        width,height,SDL_WINDOW_SHOWN
+    );
+    if(!window){
+        std::cerr<<"Window creation failed:"<<SDL_GetError()<<std::endl;
+        SDL_Quit();
+        return 1;
+    }
+    SDL_Surface* screen=SDL_GetWindowSurface(window);
+    std::cout<<" 加载模型和贴图"<<std::endl;
+
+    ModelManager model_manager;
+    model_manager.switchTo(0);
+    Model* model=model_manager.getCurrentModel();
+    TGAImage* texture=model_manager.getCurrentTexture();
+    RenderMode render_mode=RenderMode::DEFAULT;
+    std::cout << "当前索引: " << model_manager.getCurrentIndex() << std::endl;
+    std::cout << "模型指针: " << model << std::endl;
+    std::cout << "纹理指针: " << texture << std::endl;
+
+    /*
+    Model model(African_Head);
+    TGAImage texture;
+    if (!texture.read_tga_file(African_Head_Diffuse)) {
+        std::cerr << "Failed to load texture" << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+    */
+    std::cout << "==================================" << std::endl;
+    std::cout << "SDL Viewer Started!" << std::endl;
+    std::cout << "==================================" << std::endl;
+    std::cout << "Controls:" << std::endl;
+    std::cout << "  Left Mouse: Rotate" << std::endl;
+    std::cout << "  Right Mouse: Pan" << std::endl;
+    std::cout << "  Mouse Wheel: Zoom" << std::endl;
+    std::cout << "  ---" << std::endl;
+    std::cout << "  P: Toggle Projection (Perspective/Orthographic)" << std::endl;  
+    std::cout << "  shift+1/2/3/4: 切换模型\n";          
+    std::cout << "  ctrl+z: 线框模式切换\n";            
+    std::cout << "  F: Default view" << std::endl;
+    std::cout << "  G: Toggle Grid" << std::endl; 
+    std::cout<< "ctrl+f: Open Fog"<<std::endl;
+    std::cout <<  " Q:Gama Correction"<<std::endl;
+    std::cout << "  Numpad .: Focus" << std::endl;
+    std::cout << "  Numpad 1: Front (Ctrl+1: Back)" << std::endl;
+    std::cout << "  Numpad 3: Right (Ctrl+3: Left)" << std::endl;
+    std::cout << "  Numpad 7: Top (Ctrl+7: Bottom)" << std::endl;
+
+    std::cout << "  ---" << std::endl;
+    std::cout << "  ESC: Exit" << std::endl;
+    std::cout << "==================================" << std::endl;
+    
+    // 渲染参数
+    SunLight sun_light(vec3(1, 1, 1), vec3(1, 1, 1), 1.0f);
+    sun_light.setTimeOfDay(14.0f);  // 下午2点
+    /*
+    vec3 light_dir=normalize(vec3(1,1,1));
+    */
+    
+    Camera camera(vec3(0,0,3),vec3(0,0,0),Fov,aspect,Near,Far);
+    bool mouse_left_down=false;
+    bool mouse_right_down=false;
+    int last_mouse_x=0;
+    int last_mouse_y=0;
+
+    bool running=true;
+    bool show_grid=true;
+    bool simple_grid=false;
+    bool GammaCorrection=false;
+    bool enable_fog=false;
+
+
+    Uint32 Last_time=SDL_GetTicks();
+    int frame_count=0;
+
+    vec3 model_center = model_manager.getCurrentModelCenter();
+    camera.focusOn(model_center, 3.0f);
+
+    std::cout << "📍 启动时聚焦到: (" << model_center.x << ", " 
+          << model_center.y << ", " << model_center.z << ")" << std::endl;
+
+    std::cout << "==================================" << std::endl;
+    std::cout << "SDL Viewer Started!" << std::endl;
+    
+
+    while(running){
+        SDL_Event event;
+        while(SDL_PollEvent(&event)){
+            if(event.type==SDL_QUIT){
+                running=false;
+            }
+            if (sun_light.auto_rotate) {
+            sun_light.update(0.016f); 
+            } 
+            if(event.type==SDL_KEYDOWN){
+                vec3 model_center=model_manager.getCurrentModelCenter();
+                bool ctrl_pressed=(SDL_GetModState()&KMOD_CTRL);
+                if(event.key.keysym.sym==SDLK_KP_PERIOD){
+                    
+                    camera.focusOn(model_center,CameraDistance);
+                    std::cout<<"聚焦模型中"<<std::endl;
+                }
+                if(event.key.keysym.sym==SDLK_p){
+                    camera.toggleProjectionMode();
+                }
+                bool shift_pressed = (SDL_GetModState() & KMOD_SHIFT);
+                if (event.key.keysym.sym >= SDLK_1 && event.key.keysym.sym <= SDLK_9) {
+                    if (shift_pressed) {
+                       int index = event.key.keysym.sym - SDLK_1;  
+                       
+                        if (index <(int) model_manager.getModelCount()) {
+                            model_manager.switchTo(index);
+                            std::cout << "切换到模型 " << (index + 1) << std::endl;
+                            model = model_manager.getCurrentModel();
+                            texture = model_manager.getCurrentTexture();
+                        }
+                        else {
+                            std::cout << "没有模型 " << (index + 1) << "（共 " 
+                                     << model_manager.getModelCount() << " 个）" << std::endl;
+                       }
+                   }
+                }
+
+                /*
+                if(event.key.keysym.sym==SDLK_1&&(event.key.keysym.mod&KMOD_SHIFT)){
+                    model_manager.switchTo(0);
+                    std::cout << "切换到模型 1" << std::endl;
+                }
+                if(event.key.keysym.sym==SDLK_2&&(event.key.keysym.mod&KMOD_SHIFT)){
+                    model_manager.switchTo(1);
+       
+                    std::cout << "切换到模型 2" << std::endl;
+                }
+                if(event.key.keysym.sym==SDLK_3&&(event.key.keysym.mod&KMOD_SHIFT)){
+                    model_manager.switchTo(2);
+                    std::cout << "切换到模型 3" << std::endl;
+                }
+                if(event.key.keysym.sym==SDLK_4&&(event.key.keysym.mod&KMOD_SHIFT)){
+                    model_manager.switchTo(3);
+                    std::cout << "切换到模型 4" << std::endl;
+                }*/
+                if(event.key.keysym.sym==SDLK_u){
+                    enable_fog=!enable_fog;
+                }
+                if(event.key.keysym.sym == SDLK_f){
+                   camera.focusPreset(ViewPreset::DEFAULT, model_center, 3.0f);
+                }
+                if(event.key.keysym.sym==SDLK_KP_1){
+                    if(ctrl_pressed){
+                    camera.focusPreset(ViewPreset::BACK, model_center, 3.0f);
+                    }
+                    else{
+                    camera.focusPreset(ViewPreset::FRONT, model_center, 3.0f);
+                    }
+                }
+                if(event.key.keysym.sym == SDLK_KP_3){
+                    if(ctrl_pressed){
+                    camera.focusPreset(ViewPreset::LEFT, model_center, 3.0f);
+                    } else {
+                    camera.focusPreset(ViewPreset::RIGHT, model_center, 3.0f);
+                    }
+                }
+                if(event.key.keysym.sym==SDLK_KP_7){
+                    if(ctrl_pressed){
+                        camera.focusPreset(ViewPreset::BOTTOM,model_center,3.0f);
+                    }
+                    else{
+                        camera.focusPreset(ViewPreset::TOP,model_center,3.0f);
+                    }
+                }
+                if(event.key.keysym.sym==SDLK_t){
+                    float current_time=sun_light.getTimeOfDay();
+                     sun_light.setTimeOfDay(current_time + 1.0f);
+
+                }
+                if(event.key.keysym.sym==SDLK_r){
+                    sun_light.auto_rotate=!sun_light.auto_rotate;
+                    std::cout << "太阳自动旋转: " << (sun_light.auto_rotate ? "开" : "关") << std::endl;
+                }
+
+                if(event.key.keysym.sym==SDLK_g){
+                    if(ctrl_pressed){
+                        simple_grid=!simple_grid;
+                    }
+                    else{
+                        show_grid=!show_grid;
+                    }
+                }
+                if(event.key.keysym.sym==SDLK_q){
+                    GammaCorrection=!GammaCorrection;
+                    if(GammaCorrection){
+                        std::cout<<"开启伽马校正"<<std::endl;
+                    }
+                    else{
+                        std::cout<<"关闭伽马校正"<<std::endl;
+                    }
+                }
+                if(event.key.keysym.sym==SDLK_z&&(event.key.keysym.mod&KMOD_LCTRL))
+                {
+                    int current=static_cast<int>(render_mode);
+                    int next=(current+1)%static_cast<int>(RenderMode::COUNT);
+                    render_mode=static_cast<RenderMode>(next);
+                    std::cout<<"切换渲染模式为"<<getRenderModeName(render_mode)<<std::endl;
+                }
+                if(event.key.keysym.sym==SDLK_ESCAPE){
+                    running=false;
+                }
+
+
+            }
+            if(event.type==SDL_BUTTON_LEFT){
+                mouse_left_down=true;
+                last_mouse_x=event.button.x;
+                last_mouse_y=event.button.y;
+                std::cout<<"Left mouse button pressed at ("<<event.button.x<<","<<event.button.y<<")"<<std::endl;
+            }
+            if(event.type==SDL_MOUSEBUTTONDOWN){
+                if(event.button.button==SDL_BUTTON_LEFT){
+                    mouse_left_down=true;
+                    last_mouse_x=event.button.x;
+                    last_mouse_y=event.button.y;
+
+                }
+                if(event.button.button==SDL_BUTTON_RIGHT){
+                    mouse_right_down=true;
+                    last_mouse_x=event.button.x;
+                    last_mouse_y=event.button.y;
+
+                }
+            }
+            if(event.type==SDL_MOUSEBUTTONUP){
+                if(event.button.button==SDL_BUTTON_LEFT){
+                    mouse_left_down=false;
+                    std::cout << "左键松开！" << std::endl;
+                }
+                if(event.button.button==SDL_BUTTON_RIGHT){
+                    mouse_right_down=false;
+                    std::cout << "右键松开！" << std::endl;
+                }
+            }
+            if(event.type==SDL_MOUSEMOTION){
+                int current_x = event.motion.x;
+                int current_y = event.motion.y;
+                int delta_x = current_x - last_mouse_x;
+                int delta_y = current_y - last_mouse_y;
+                
+                if (mouse_left_down) {
+                    camera.rotate(delta_x*Config::MouseSensitivity,delta_y*MouseSensitivity);
+                }
+                if(mouse_right_down){
+                    camera.pan(delta_x*Config::MouseSensitivity,delta_y*Config::MouseSensitivity);
+                }
+                last_mouse_x=current_x;//这部分就是生命周期
+                last_mouse_y=current_y;
+            }
+            if(event.type==SDL_MOUSEWHEEL)
+            {
+                float zoom_delta=event.wheel.y*Config::ZOOM_SENSITIVITY;
+                camera.zoom(zoom_delta);
+                std::cout<<"Zoom:"<<camera.getDistance()<<std::endl;
+            }
+        }
+        TGAImage framebuffer(width,height,3,ColorTable::getColor(ColorName::BLACK));
+        std::vector<float>zbuffer(width*height,-1e9);
+
+
+        framebuffer.clear();
+        render_skyBox(framebuffer);
+
+        
+        mat4 view=camera.getViewMatrix();
+        mat4 projection=camera.getProjectionMatrix();
+        mat4 mvp=camera.getViewProjectionMatrix();
+
+        if(show_grid){
+            if(simple_grid){
+                DrawGrid(framebuffer,mvp,camera.getPosition(),TGAColor(100,100,100,255));
+
+            }
+            else{
+                DrawInfiniteGrid(framebuffer,view,projection,camera.getPosition());
+                /*
+                DrawScreenSpaceGrid(framebuffer,mvp,camera,TGAColor(100,100,100,255));
+                */
+            }
+        }
+        std::unique_ptr<IShader>shader;
+        switch(render_mode){
+            case RenderMode::DEFAULT:{
+                 shader = std::make_unique<DefaultShader>(
+                 model, texture, mvp, sun_light, 
+                camera.getPosition(), enable_fog
+        );
+                break;
+            }
+            case RenderMode::BLINN_PHONG: {
+                 shader = std::make_unique<BlinnPhongShader>(
+                model, texture, mvp, sun_light, camera.getPosition()
+                );
+                 break;
+            }
+            case RenderMode::WIREFRAME: {
+                 shader = std::make_unique<WireframeShader>(model, mvp);
+             break;
+            }
+            default:
+            break;
+        }
+        if(shader){
+            RenderWithShader(framebuffer,*model,zbuffer,shader.get());
+        }
+        /**
+         *@brief 目前还是用复制的方法，性能较低。之后再尝试其他方式。
+        */
+        copy_image_to_surface(framebuffer,screen,width,height);
+        if(GammaCorrection){
+            applyGammaCorrection(framebuffer);
+        }
+
+        SDL_UpdateWindowSurface(window);
+        frame_count++;
+        Uint32 current_time = SDL_GetTicks();
+        if (current_time - Last_time >= 1000) {
+            std::cout << "FPS: " << frame_count << std::endl;
+            frame_count = 0;
+            Last_time = current_time;
+        }
+    
+    }
+
+
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 0;
+
+
+
+}

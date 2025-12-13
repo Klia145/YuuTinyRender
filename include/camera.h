@@ -7,6 +7,10 @@ enum class ProjectionMode{
     PERSPECTIVE,ORTHOGRAPHIC
 
 };
+enum class CameraMode{
+    ORBIT,FREE
+
+};
 class Camera{
     private:
     vec3 position;
@@ -24,6 +28,9 @@ class Camera{
 
     ProjectionMode projection_mode;
     float ortho_size;
+
+    CameraMode camera_mode;
+    vec3 forward;
     
 
     
@@ -51,4 +58,9 @@ class Camera{
 
     vec3 screenToWorldRay(int screen_x,int screen_y,int width,int height)const;
     vec3 rayGroundIntersection(const vec3&ray_origin,const vec3&raydir)const;
+    void setCameraMode(CameraMode m) { camera_mode = m; }
+    CameraMode getCameraMode() const { return camera_mode; }
+    
+    void rotateFree(float delta_yaw, float delta_pitch);  // 自由旋转
+    void rotateOrbit(float delta_yaw, float delta_pitch); // 轨道旋转
 };
