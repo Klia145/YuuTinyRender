@@ -13,23 +13,29 @@
 
 ---
 
-## 📸 渲染效果 (Gallery)
+##  渲染效果 (Gallery)
+<div align="center">
+  <img src=![Image](https://github.com/user-attachments/assets/18b914d5-eff1-4795-ae64-aa325559ea41) width="80%" />
+  <br>
+  <i>图示：实时光照与阴影变化演示与线框模式演示</i>
+</div>
 
 ### 实时交互环境
 集成了 **Dear ImGui**，允许在运行时实时调整 Shader 参数、观察模型细节并监控性能。
 
-![Overview](docs/screenshots/overview.png)
-*(实时运行截图：Blinn-Phong 光照模型 + 辅助网格系统)*
+![Overview](docs/screenshots/Screenshot 2025-12-14 133551.png)
 
 ### 渲染模式对比
 支持多种渲染模式的实时热切换，用于调试几何结构与光照计算。
 
 <table>
   <tr>
+    <td align="center"><b>FogEffect</b></td>
     <td align="center"><b>Wireframe Mode</b></td>
     <td align="center"><b>Blinn-Phong Shading</b></td>
   </tr>
   <tr>
+    <td align="center"><img src="docs/screenshots/fog.png" width="400"/></td>
     <td align="center"><img src="docs/screenshots/wireframe.png" width="400"/></td>
     <td align="center"><img src="docs/screenshots/shading.png" width="400"/></td>
   </tr>
@@ -41,9 +47,9 @@
 
 ---
 
-## ✨ 核心特性 (Features)
+##  核心特性 (Features)
 
-### 🏗️ 渲染管线 (Pipeline)
+###  渲染管线 (Pipeline)
 * **Math Library**: 手写数学库，实现了 `Vector`, `Matrix`, `Quaternion` 等核心运算。
 * **Transform**: 完整的 MVP (Model-View-Projection) 变换矩阵推导。
 * **Clipping**: 视锥体裁剪 (Frustum Culling) 与 齐次空间裁剪。
@@ -52,7 +58,7 @@
     * **透视校正插值 (Perspective Correct Interpolation)**：修复纹理在透视投影下的扭曲。
     * **深度测试 (Z-Buffering)**：处理复杂的物体遮挡关系。
 
-### 🎨 着色与光照 (Shading & Lighting)
+###  着色与光照 (Shading & Lighting)
 * **可编程管线模拟**: 抽象了 `VertexShader` 和 `FragmentShader`，模拟 GPU 工作流。
 * **光照模型**: 
     * Flat Shading
@@ -63,7 +69,7 @@
     * **Gamma Correction**: 线性空间光照计算。
     * **Linear Fog**: 基于深度的线性雾效。
 
-### 🛠️ 工程与交互 (Engineering & Tools)
+###  工程与交互 (Engineering & Tools)
 * **Interactive UI**: 集成 ImGui，支持 FPS 统计、参数滑块调节。
 * **Camera System**: 实现了类似 FPS 游戏的摄像机控制（平移/旋转/缩放）。
 * **Debug Tools**: 世界空间网格 (Grid)、坐标轴可视化、线框模式切换。
@@ -71,7 +77,7 @@
 
 ---
 
-## 🎮 控制指南 (Controls)
+##  控制指南 (Controls)
 
 | 输入 | 动作 |
 | :--- | :--- |
@@ -84,7 +90,7 @@
 
 ---
 
-## 🚀 快速开始 (Build & Run)
+##  快速开始 (Build & Run)
 
 ### 环境依赖
 * **Compiler**: C++17 (MSVC / GCC / Clang)
@@ -93,25 +99,21 @@
 ### 构建 (CMake)
 
 ```bash
-# 1. Clone the repository
+
 git clone [https://github.com/YourUsername/SoftwareRasterizer.git](https://github.com/YourUsername/SoftwareRasterizer.git)
 cd SoftwareRasterizer
 
-# 2. Build
 mkdir build && cd build
 cmake ..
 cmake --build . --config Release
 
-# 3. Run
 ./SoftwareRasterizer
-📚 致谢与参考 (References)
+ 致谢与参考 (References)
 GAMES101 - 闫令琪教授 (现代计算机图形学入门)
-
 TinyRenderer - Dmitry V. Sokolov
-
 LearnOpenGL - Joey de Vries
 
-<div align="center"> <b>Made with ❤️ by 屿 (Yuu)</b>
+<div align="center"> <b>Made with  by 屿 (Yuu)</b>
 
 
 <i>Technical Artist Candidate</i> </div>
