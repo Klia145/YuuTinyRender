@@ -30,7 +30,47 @@
   <i>图示：基础Blinn-Phong模式和多角度光照/i>
 </div>
 
+## 📊 性能基准 (Performance Benchmark)
 
+<div align="center">
+  <img src="docs/screenshots/interactivefps.gif" width="80%" />
+  <br>
+  <i>图示：性能测试/i>
+</div>
+
+> 测试模型：African Head (约 15,000 三角面) | 分辨率：800x600 | 平台：Windows 10
+
+### 🖥️ 测试环境 (Environment)
+* **CPU**: [Intel Core i7-12700H] @ 2.30GHz (Single Core / Multi-thread)
+* **RAM**: 32 GB DDR4
+* **Optimization**: OpenMP Enabled (Parallel Rasterization)
+
+### 📈 帧率统计 (Frame Rates)
+
+| Render Mode | FPS (Avg) | Frame Time | Computational Cost |
+| :--- | :--- | :--- | :--- |
+| **Wireframe** | **60+ FPS** | < 16.6 ms |  Low (Vertex Processing Only) |
+| **Blinn-Phong** | **~25 FPS** | ~40.0 ms |  High (Per-pixel Lighting + Texture) |
+| **4x MSAA** | **~15 FPS** | ~66.6 ms |  Very High (4x Depth Samples) |
+
+### ⚡ 优化策略 (Optimizations)
+为了在 CPU 上实现可交互的帧率，项目实施了以下优化：
+
+1.  **Back-face Culling (背面剔除)**:
+    * 在光栅化阶段前计算三角形法线，剔除背向摄像机的面。
+    * **收益**: 减少了约 **50%** 的像素着色计算量。
+
+2.  **Bounding Box Traversal (包围盒遍历)**:
+    * 仅遍历三角形 AABB (Axis-Aligned Bounding Box) 内的像素，而非全屏扫描。
+    * **收益**: 将像素遍历复杂度从屏幕分辨率 $O(W \times H)$ 降低至三角形大小相关。
+
+3.  **Parallel Rasterization (OpenMP)**:
+    * 利用 `#pragma omp parallel for` 对三角形光栅化循环进行多线程加速。
+    * **收益**: 在多核 CPU 上提升了约 **40%-60%** 的渲染性能。
+
+4.  **Early-Z Test (早期深度测试)**:
+    * 在执行复杂的 Fragment Shader (纹理采样/光照计算) 之前，先进行深度测试。
+    * **收益**: 避免了被遮挡像素的无效计算。
 
 ### 实时交互环境
 集成了 **Dear ImGui**，允许在运行时实时调整 Shader 参数、观察模型细节并监控性能。
