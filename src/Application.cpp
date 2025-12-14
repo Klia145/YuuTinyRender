@@ -91,17 +91,17 @@ bool Application::UI_Init(){
                                   io.Fonts->GetGlyphRangesChineseFull());
     if (io.Fonts->Fonts.Size == 0) {
         io.Fonts->AddFontDefault();
-        std::cout << "⚠️ 中文字体加载失败，使用默认字体" << std::endl;
+        std::cout << " 中文字体加载失败，使用默认字体" << std::endl;
     }
     
     ImGui::StyleColorsDark();     
     if (!ImGui_ImplSDL2_InitForSDLRenderer(window, renderer)) {
-        std::cerr << "❌ ImGui SDL2 初始化失败" << std::endl;
+        std::cerr << " ImGui SDL2 初始化失败" << std::endl;
         return false;
     }
     
     if (!ImGui_ImplSDLRenderer2_Init(renderer)) {
-        std::cerr << "❌ ImGui Renderer 初始化失败" << std::endl;
+        std::cerr << " ImGui Renderer 初始化失败" << std::endl;
         ImGui_ImplSDL2_Shutdown();
         return false;
     }
@@ -322,7 +322,7 @@ void Application::handleKeyboard(const SDL_Event& event) {
     if (model_manager.getCurrentIndex() != old_index) {
         model = model_manager.getCurrentModel();
         texture = model_manager.getCurrentTexture();
-        std::cout << "✓ 模型指针已更新" << std::endl;
+        std::cout << "模型指针已更新" << std::endl;
     }
 }
 
@@ -357,12 +357,12 @@ void Application::renderUI() {
     ImGui::NewFrame();
     
     // === 主信息窗口 ===
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(300, 450), ImGuiCond_FirstUseEver);
+
     
     ImGui::Begin(" Yuu's Rasterizer", nullptr);
     
-    // 性能
     ImGui::SeparatorText(" 性能");
     if (current_fps >= 50) {
         ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "FPS: %d", current_fps);
@@ -400,6 +400,29 @@ void Application::renderUI() {
     ImGui::BulletText("雾效: %s", enable_fog ? "open" : "close");
     ImGui::BulletText("伽马: %s", gamma_correction ? "open" : "close");
     
+    ImGui::End();
+    ImGui::SetNextWindowPos(
+        ImVec2(width-300,20),ImGuiCond_FirstUseEver
+    );
+    ImGui::SetNextWindowSize(
+    ImVec2(280, 200),                // 窗口大小
+    ImGuiCond_FirstUseEver
+);
+    ImGui::Begin("RenderMode Settings",nullptr,ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize);
+    ImGui::Text("Render Mode:");
+    ImGui::Separator();  // 分隔线
+    if (ImGui::RadioButton("Wireframe", render_mode == RenderMode::WIREFRAME)) {
+        render_mode = RenderMode::WIREFRAME;
+    }
+    
+    if (ImGui::RadioButton("Blinn-Phong", render_mode == RenderMode::BLINN_PHONG)) {
+        render_mode = RenderMode::BLINN_PHONG;
+    }
+    
+    if (ImGui::RadioButton("Default (Phong)", render_mode == RenderMode::DEFAULT)) {
+        render_mode = RenderMode::DEFAULT;
+    }
+
     ImGui::End();
     
     ImGui::Render();

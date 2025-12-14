@@ -98,14 +98,6 @@ bool ModelManager::loadModelData(size_t index){
     }
     models[index].center=(bounding_min+bounding_max)*0.5f;
     models[index].radius=(bounding_max-bounding_min).length()*0.5f;
-    std::cout << "📦 包围盒 Min: (" << bounding_min.x << ", " << bounding_min.y << ", " << bounding_min.z << ")" << std::endl;
-    std::cout << "📦 包围盒 Max: (" << bounding_max.x << ", " << bounding_max.y << ", " << bounding_max.z << ")" << std::endl;
-    std::cout << "📍 模型中心: (" << models[index].center.x << ", " 
-              << models[index].center.y << ", " << models[index].center.z << ")" << std::endl;
-    std::cout << "📏 半径: " << models[index].radius << std::endl;
-
-    
-
     models[index].is_loaded=true;
     if(isModelComplete(index)){
         return true;
