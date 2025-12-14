@@ -15,19 +15,19 @@
 
 ##  渲染效果 (Gallery)
 <div align="center">
-  <img src="docs/screenshots/interactive1.gif" width="80%" />
+  <img src="docs/screenshots/interactive1.gif" width="40%" />
   <br>
   <i>图示：默认渲染</i>
 </div>
 <div align="center">
-  <img src="docs/screenshots/interactive2.gif" width="80%" />
+  <img src="docs/screenshots/interactive2.gif" width="40%" />
   <br>
-  <i>图示：线框模式/i>
+  <i>图示：线框模式</i>
 </div>
 <div align="center">
-  <img src="docs/screenshots/interactive3.gif" width="80%" />
+  <img src="docs/screenshots/interactive3.gif" width="40%" />
   <br>
-  <i>图示：基础Blinn-Phong模式和多角度光照/i>
+  <i>图示：基础Blinn-Phong模式和多角度光照</i>
 </div>
 
 ## 📊 性能基准 (Performance Benchmark)
