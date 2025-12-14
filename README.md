@@ -32,7 +32,8 @@
     </tr>
   </table>
 </div>
-##  性能基准 (Performance Benchmark)
+
+###  性能基准 
 
 <div align="center">
   <img src="docs/screenshots/interactivefps.gif" width="80%" />
@@ -42,7 +43,7 @@
 
 > 测试模型：African Head (约 15,000 三角面) | 分辨率：800x600 | 平台：Windows 10
 
-### 🖥️ 测试环境 
+###  测试环境 
 * **CPU**: [Intel Core i7-12700H] @ 2.30GHz (Single Core / Multi-thread)
 * **RAM**: 32 GB DDR4
 * **Optimization**: OpenMP Enabled (Parallel Rasterization)
@@ -55,7 +56,7 @@
 | **Blinn-Phong** | **~25 FPS** | ~40.0 ms |  High (Per-pixel Lighting + Texture) |
 | **4x MSAA** | **~15 FPS** | ~66.6 ms |  Very High (4x Depth Samples) |
 
-### ⚡ 优化策略 (Optimizations)
+###  优化策略 
 为了在 CPU 上实现可交互的帧率，项目实施了以下优化：
 
 1.  **Back-face Culling (背面剔除)**:
@@ -100,18 +101,18 @@
 
 ---
 
-##  核心特性 (Features)
+##  核心特性 
 
-###  渲染管线 (Pipeline)
+###  渲染管线 
 * **Math Library**: 手写数学库，实现了 `Vector`, `Matrix`, `Quaternion` 等核心运算。
 * **Transform**: 完整的 MVP (Model-View-Projection) 变换矩阵推导。
 * **Clipping**: 视锥体裁剪 (Frustum Culling) 与 齐次空间裁剪。
 * **Rasterization**: 
-    * 基于包围盒 (Bounding Box) 的三角形遍历算法。
+    * **基于包围盒 (Bounding Box)** 的三角形遍历算法。
     * **透视校正插值 (Perspective Correct Interpolation)**：修复纹理在透视投影下的扭曲。
     * **深度测试 (Z-Buffering)**：处理复杂的物体遮挡关系。
 
-###  着色与光照 (Shading & Lighting)
+###  着色与光照 
 * **可编程管线模拟**: 抽象了 `VertexShader` 和 `FragmentShader`，模拟 GPU 工作流。
 * **光照模型**: 
     * Flat Shading
@@ -122,7 +123,7 @@
     * **Gamma Correction**: 线性空间光照计算。
     * **Linear Fog**: 基于深度的线性雾效。
 
-###  工程与交互 (Engineering & Tools)
+###  工程与交互 
 * **Interactive UI**: 集成 ImGui，支持 FPS 统计、参数滑块调节。
 * **Camera System**: 实现了类似 FPS 游戏的摄像机控制（平移/旋转/缩放）。
 * **Debug Tools**: 世界空间网格 (Grid)、坐标轴可视化、线框模式切换。
