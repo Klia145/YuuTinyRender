@@ -40,6 +40,7 @@
     <td align="center"><img src="docs/screenshots/shading.png" width="400"/></td>
   </tr>
   <tr>
+    <td align="center">基于距离的雾颜色和物体颜色的插值运算<br>(带背面剔除)</td>
     <td align="center">基于重心坐标的三角形光栅化<br>(带背面剔除)</td>
     <td align="center">基于法线插值的高光渲染<br>(带纹理映射)</td>
   </tr>
