@@ -15,15 +15,13 @@
 
 ##  渲染效果 (Gallery)
 <div align="center">
-  <img src=![Image](https://github.com/user-attachments/assets/18b914d5-eff1-4795-ae64-aa325559ea41) width="80%" />
+  <img src="![Image](https://github.com/user-attachments/assets/8c3f138a-4193-4143-ad4a-e29697ad2060)" width="80%" />
   <br>
   <i>图示：实时光照与阴影变化演示与线框模式演示</i>
 </div>
 
 ### 实时交互环境
 集成了 **Dear ImGui**，允许在运行时实时调整 Shader 参数、观察模型细节并监控性能。
-
-![Overview](docs/screenshots/Screenshot 2025-12-14 133551.png)
 
 ### 渲染模式对比
 支持多种渲染模式的实时热切换，用于调试几何结构与光照计算。
@@ -113,6 +111,7 @@ cmake --build . --config Release
 GAMES101 - 闫令琪教授 (现代计算机图形学入门)
 TinyRenderer - Dmitry V. Sokolov
 LearnOpenGL - Joey de Vries
+```
 
 <div align="center"> <b>Made with  by 屿 (Yuu)</b>
 
