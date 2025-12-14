@@ -15,10 +15,22 @@
 
 ##  渲染效果 (Gallery)
 <div align="center">
-  <img src="![Image](https://github.com/user-attachments/assets/8c3f138a-4193-4143-ad4a-e29697ad2060)" width="80%" />
+  <img src="docs/screenshots/interactive1.gif" width="80%" />
   <br>
-  <i>图示：实时光照与阴影变化演示与线框模式演示</i>
+  <i>图示：默认渲染</i>
 </div>
+<div align="center">
+  <img src="docs/screenshots/interactive2.gif" width="80%" />
+  <br>
+  <i>图示：线框模式/i>
+</div>
+<div align="center">
+  <img src="docs/screenshots/interactive3.gif" width="80%" />
+  <br>
+  <i>图示：基础Blinn-Phong模式和多角度光照/i>
+</div>
+
+
 
 ### 实时交互环境
 集成了 **Dear ImGui**，允许在运行时实时调整 Shader 参数、观察模型细节并监控性能。
@@ -107,13 +119,15 @@ cmake ..
 cmake --build . --config Release
 
 ./SoftwareRasterizer
- 致谢与参考 (References)
+```
+
+
+致谢与参考 (References)
 GAMES101 - 闫令琪教授 (现代计算机图形学入门)
 TinyRenderer - Dmitry V. Sokolov
 LearnOpenGL - Joey de Vries
-```
-
-<div align="center"> <b>Made with  by 屿 (Yuu)</b>
 
 
-<i>Technical Artist Candidate</i> </div>
+
+
+
