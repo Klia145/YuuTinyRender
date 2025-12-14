@@ -13,7 +13,7 @@
 
 ---
 
-##  渲染效果 (Gallery)
+##  渲染效果
 <div align="center">
   <table>
     <tr>
@@ -32,7 +32,7 @@
     </tr>
   </table>
 </div>
-## 📊 性能基准 (Performance Benchmark)
+##  性能基准 (Performance Benchmark)
 
 <div align="center">
   <img src="docs/screenshots/interactivefps.gif" width="80%" />
@@ -42,12 +42,12 @@
 
 > 测试模型：African Head (约 15,000 三角面) | 分辨率：800x600 | 平台：Windows 10
 
-### 🖥️ 测试环境 (Environment)
+### 🖥️ 测试环境 
 * **CPU**: [Intel Core i7-12700H] @ 2.30GHz (Single Core / Multi-thread)
 * **RAM**: 32 GB DDR4
 * **Optimization**: OpenMP Enabled (Parallel Rasterization)
 
-### 📈 帧率统计 (Frame Rates)
+### 性能数据 
 
 | Render Mode | FPS (Avg) | Frame Time | Computational Cost |
 | :--- | :--- | :--- | :--- |
